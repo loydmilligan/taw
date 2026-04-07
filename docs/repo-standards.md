@@ -61,6 +61,8 @@ When adding a meaningful subsystem:
 - update relevant docs if behavior changes materially
 - keep README setup instructions current
 - keep command docs accurate
+- keep `CHANGELOG.md` and release-facing docs aligned with shipped behavior
+- follow the repository versioning policy in `docs/versioning.md`
 
 ## Definition of clean handoff
 A handoff is clean when:

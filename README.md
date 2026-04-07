@@ -2,6 +2,8 @@
 
 TAW is a terminal-native, chat-first AI workspace for planning, brainstorming, workflow design, workflow review, and markdown artifact generation. It is intentionally not a coding agent.
 
+Current baseline: `0.1.0-beta.1`
+
 ## Requirements
 
 - Node.js 20+
@@ -76,3 +78,5 @@ Global config example:
 Manual QA steps live in [docs/manual-qa-checklist.md](/home/loydmilligan/Projects/taw/docs/manual-qa-checklist.md).
 
 Memory design notes live in [docs/memory-architecture.md](/home/loydmilligan/Projects/taw/docs/memory-architecture.md).
+
+Versioning policy lives in [docs/versioning.md](/home/loydmilligan/Projects/taw/docs/versioning.md). Release history lives in [CHANGELOG.md](/home/loydmilligan/Projects/taw/CHANGELOG.md).

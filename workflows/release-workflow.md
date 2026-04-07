@@ -3,15 +3,17 @@
 ## Beta readiness flow
 
 1. Update docs if implementation changed
-2. Run lint
-3. Run targeted tests
-4. Run manual QA checklist
-5. Fix blockers
-6. Verify project initialization in a clean directory
-7. Verify general-mode launch outside a project
-8. Verify artifact creation paths
-9. Tag / mark beta candidate
-10. Document known limitations
+2. Update `CHANGELOG.md`
+3. Confirm release version and versioning policy expectations in `docs/versioning.md`
+4. Run lint
+5. Run targeted tests
+6. Run manual QA checklist
+7. Fix blockers
+8. Verify project initialization in a clean directory
+9. Verify general-mode launch outside a project
+10. Verify artifact creation paths
+11. Tag / mark beta candidate
+12. Document known limitations
 
 ## Known limitations template
 
