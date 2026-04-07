@@ -1,7 +1,7 @@
 import type { ProviderConfig } from './provider.js';
 import type { GlobalConfig, ProjectConfig } from '../services/config/schema.js';
 import type { SessionRecord } from './session.js';
-import type { AppPhase } from '../app/state.js';
+import type { AppPhase, UsageSnapshot } from '../app/state.js';
 
 export interface TranscriptEntry {
   id: string;
@@ -23,4 +23,5 @@ export interface AppState {
   isStreaming: boolean;
   session: SessionRecord;
   transcript: TranscriptEntry[];
+  usage: UsageSnapshot;
 }

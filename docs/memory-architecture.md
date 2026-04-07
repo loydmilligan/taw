@@ -115,4 +115,11 @@ project/.ai/assistant/
 
 ## Current TAW state
 
-Today TAW persists session notes, summaries, and artifacts, but it does not yet perform durable memory recall. `COMMANDS.md` is the first generated assistant reference file added to close the command-awareness gap.
+TAW now scaffolds both global and project assistant files, regenerates `USER.summary.md` and `MEMORY.summary.md`, injects those summaries on every turn, and retrieves the most relevant raw `USER.md` and `MEMORY.md` sections based on the current message.
+
+Still not implemented:
+
+- explicit memory write commands
+- prior-session recall beyond what is manually captured in `USER.md` and `MEMORY.md`
+- embeddings or vector retrieval
+- automatic memory curation workflows

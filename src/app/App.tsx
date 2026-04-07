@@ -1,17 +1,35 @@
 import React from 'react';
 import { Box, useApp, useInput } from 'ink';
-import type { AppState } from '../types/app.js';
+import { bootstrapApp } from '../cli/bootstrap.js';
+import type { AppState, TranscriptEntry } from '../types/app.js';
 import { Header } from './layout/Header.js';
 import { Transcript } from './layout/Transcript.js';
 import { Footer } from './layout/Footer.js';
+import {
+  CommandPalette,
+  type CommandPaletteItem
+} from './layout/CommandPalette.js';
 import { InputBar } from './components/InputBar.js';
 import { commandRegistry, getCommandDefinition } from '../commands/registry.js';
 import { isSlashCommand, parseCommand } from '../commands/parser.js';
-import type { TranscriptEntry } from '../types/app.js';
+import { summarizeSessionUsage } from '../core/telemetry/derivation.js';
+import { readTelemetrySummaries } from '../core/telemetry/store.js';
 import { createId } from '../utils/ids.js';
 import { logError } from '../services/logging/logger.js';
 import { executeChatTurn } from '../core/chat/engine.js';
-import { currentDraftTitle, resolvePhaseAfterCommand } from './state.js';
+import {
+  currentDraftTitle,
+  deleteBackward,
+  deleteForward,
+  insertInputText,
+  moveCursor,
+  moveCursorToEnd,
+  moveCursorToStart,
+  resolvePhaseAfterCommand,
+  toDisplayCursor,
+  toDisplayValue,
+  type InputState
+} from './state.js';
 
 interface AppProps {
   state: AppState;
@@ -19,30 +37,103 @@ interface AppProps {
 
 export function App({ state }: AppProps): React.JSX.Element {
   const { exit } = useApp();
-  const [input, setInput] = React.useState('');
+  const workingDirectory = process.cwd();
+  const [inputState, setInputState] = React.useState<InputState>({
+    value: '',
+    cursor: 0
+  });
   const [appState, setAppState] = React.useState(state);
   const [selectedSuggestion, setSelectedSuggestion] = React.useState(0);
-  const inputRef = React.useRef(input);
+  const [showStreamingDraft, setShowStreamingDraft] = React.useState(false);
+  const [commandPaletteOpen, setCommandPaletteOpen] = React.useState(false);
+  const [selectedPaletteIndex, setSelectedPaletteIndex] = React.useState(0);
+  const inputRef = React.useRef(inputState);
   const appStateRef = React.useRef(appState);
   const streamAbortRef = React.useRef<AbortController | null>(null);
-  const suggestions = React.useMemo(() => getSuggestions(input), [input]);
+  const activeAssistantIdRef = React.useRef<string | null>(null);
+  const streamedAssistantTextRef = React.useRef('');
+  const flushTimerRef = React.useRef<ReturnType<
+    typeof globalThis.setTimeout
+  > | null>(null);
+  const suggestions = React.useMemo(
+    () => getSuggestions(inputState.value),
+    [inputState.value]
+  );
 
   React.useEffect(() => {
-    inputRef.current = input;
-  }, [input]);
+    inputRef.current = inputState;
+  }, [inputState]);
 
   React.useEffect(() => {
     appStateRef.current = appState;
   }, [appState]);
 
+  React.useEffect(
+    () => () => {
+      if (flushTimerRef.current) {
+        globalThis.clearTimeout(flushTimerRef.current);
+      }
+    },
+    []
+  );
+
   useInput((value, key) => {
+    if (key.ctrl && value.toLowerCase() === 'p') {
+      setCommandPaletteOpen((current) => !current);
+      return;
+    }
+
+    if (key.ctrl && value.toLowerCase() === 't') {
+      setShowStreamingDraft((current) => {
+        const next = !current;
+        if (next) {
+          flushAssistantText(true);
+        }
+        return next;
+      });
+      return;
+    }
+
+    if (commandPaletteOpen) {
+      if (key.escape) {
+        setCommandPaletteOpen(false);
+        return;
+      }
+
+      if (key.upArrow) {
+        setSelectedPaletteIndex(
+          (current) =>
+            (current -
+              1 +
+              getPaletteItems(appStateRef.current.isStreaming).length) %
+            getPaletteItems(appStateRef.current.isStreaming).length
+        );
+        return;
+      }
+
+      if (key.downArrow) {
+        setSelectedPaletteIndex(
+          (current) =>
+            (current + 1) %
+            getPaletteItems(appStateRef.current.isStreaming).length
+        );
+        return;
+      }
+
+      if (key.return) {
+        void runPaletteAction();
+        return;
+      }
+
+      return;
+    }
+
     if (key.escape && appStateRef.current.isStreaming) {
       streamAbortRef.current?.abort();
       return;
     }
 
-    if (value.includes('\n') || value.includes('\r')) {
-      void handleChunkInput(value);
+    if (appStateRef.current.isStreaming) {
       return;
     }
 
@@ -51,20 +142,43 @@ export function App({ state }: AppProps): React.JSX.Element {
       return;
     }
 
-    if (key.backspace || key.delete) {
-      setInput((current) => {
-        const nextValue = current.slice(0, -1);
-        inputRef.current = nextValue;
-        return nextValue;
-      });
+    if (key.leftArrow) {
+      updateInputState((current) => moveCursor(current, -1));
+      return;
+    }
+
+    if (key.rightArrow) {
+      updateInputState((current) => moveCursor(current, 1));
+      return;
+    }
+
+    if (key.ctrl && value.toLowerCase() === 'a') {
+      updateInputState(moveCursorToStart);
+      return;
+    }
+
+    if (key.ctrl && value.toLowerCase() === 'e') {
+      updateInputState(moveCursorToEnd);
+      return;
+    }
+
+    if (key.backspace) {
+      updateInputState(deleteBackward);
+      return;
+    }
+
+    if (key.delete) {
+      updateInputState(deleteForward);
       return;
     }
 
     if (key.tab && suggestions.length > 0) {
       const suggestion = suggestions[selectedSuggestion] ?? suggestions[0];
       const nextValue = `/${suggestion.name} `;
-      inputRef.current = nextValue;
-      setInput(nextValue);
+      setInputState({
+        value: nextValue,
+        cursor: nextValue.length
+      });
       return;
     }
 
@@ -85,28 +199,33 @@ export function App({ state }: AppProps): React.JSX.Element {
       return;
     }
 
-    if (!key.ctrl && value && value >= ' ' && value !== '\u0003') {
-      setInput((current) => {
-        const nextValue = current + value;
-        inputRef.current = nextValue;
-        return nextValue;
-      });
+    if (value) {
+      updateInputState((current) => insertInputText(current, value));
     }
   });
 
   React.useEffect(() => {
     setSelectedSuggestion(0);
-  }, [input]);
+  }, [inputState.value]);
+
+  React.useEffect(() => {
+    if (!commandPaletteOpen) {
+      flushAssistantText(true);
+    }
+  }, [commandPaletteOpen]);
 
   async function submitInput(): Promise<void> {
-    const trimmed = inputRef.current.trim();
+    if (appStateRef.current.isStreaming) {
+      return;
+    }
+
+    const trimmed = inputRef.current.value.trim();
 
     if (!trimmed) {
       return;
     }
 
-    setInput('');
-    inputRef.current = '';
+    setInputState({ value: '', cursor: 0 });
 
     const userEntry: TranscriptEntry = {
       id: createId('user'),
@@ -120,71 +239,17 @@ export function App({ state }: AppProps): React.JSX.Element {
     }));
 
     if (isSlashCommand(trimmed)) {
-      try {
-        const parsed = parseCommand(trimmed);
-        const command = getCommandDefinition(parsed.name);
-
-        if (!command) {
-          throw new Error(`Unknown command: /${parsed.name}. Try /help.`);
-        }
-
-        const result = await command.run(parsed, {
-          cwd: process.cwd(),
-          session: appStateRef.current.session,
-          transcript: appStateRef.current.transcript,
-          providerConfig: appStateRef.current.providerConfig,
-          mode: appStateRef.current.mode,
-          globalConfig: appStateRef.current.globalConfig,
-          projectConfig: appStateRef.current.projectConfig
-        });
-
-        setAppState((current) => ({
-          ...current,
-          mode: result.mode ?? current.mode,
-          phase:
-            result.phase ??
-            resolvePhaseAfterCommand(
-              result.mode ?? current.mode,
-              current.phase
-            ),
-          provider: result.provider ?? current.provider,
-          model: result.model ?? current.model,
-          providerConfig: result.providerConfig ?? current.providerConfig,
-          commandReference: current.commandReference,
-          globalConfig: current.globalConfig,
-          projectConfig: current.projectConfig,
-          session: result.session ?? current.session,
-          transcript: [...current.transcript, ...result.entries]
-        }));
-
-        if (result.shouldExit) {
-          exit();
-        }
-      } catch (error) {
-        void logError('command', error);
-        setAppState((current) => ({
-          ...current,
-          transcript: [
-            ...current.transcript,
-            {
-              id: createId('command-error'),
-              kind: 'error',
-              title: 'Command Error',
-              body:
-                error instanceof Error
-                  ? error.message
-                  : 'Unknown command error.'
-            }
-          ]
-        }));
-      }
-
+      await runCommand(trimmed);
       return;
     }
 
     const assistantId = createId('assistant');
     const abortController = new AbortController();
+    const modeAtStart = appStateRef.current.mode;
     streamAbortRef.current = abortController;
+    activeAssistantIdRef.current = assistantId;
+    streamedAssistantTextRef.current = '';
+    setShowStreamingDraft(false);
 
     setAppState((current) => ({
       ...current,
@@ -195,10 +260,9 @@ export function App({ state }: AppProps): React.JSX.Element {
         {
           id: assistantId,
           kind: 'assistant',
-          title: currentDraftTitle(appStateRef.current.mode),
+          title: currentDraftTitle(modeAtStart),
           body: '',
-          draftState:
-            appStateRef.current.mode === 'General' ? undefined : 'pending'
+          draftState: modeAtStart === 'General' ? undefined : 'pending'
         }
       ]
     }));
@@ -207,24 +271,19 @@ export function App({ state }: AppProps): React.JSX.Element {
       await executeChatTurn({
         transcript: appStateRef.current.transcript,
         latestUserInput: trimmed,
-        mode: appStateRef.current.mode,
+        mode: modeAtStart,
         providerConfig: appStateRef.current.providerConfig,
         commandReference: appStateRef.current.commandReference,
         session: appStateRef.current.session,
         projectConfig: appStateRef.current.projectConfig,
         signal: abortController.signal,
         onChunk: (assistantText) => {
-          setAppState((current) => ({
-            ...current,
-            transcript: current.transcript.map((entry) =>
-              entry.id === assistantId
-                ? { ...entry, body: assistantText }
-                : entry
-            )
-          }));
+          streamedAssistantTextRef.current = assistantText;
+          flushAssistantText(false);
         }
       });
       streamAbortRef.current = null;
+      flushAssistantText(true);
       setAppState((current) => ({
         ...current,
         isStreaming: false,
@@ -234,11 +293,14 @@ export function App({ state }: AppProps): React.JSX.Element {
           entry.id === assistantId
             ? {
                 ...entry,
+                body: streamedAssistantTextRef.current,
                 draftState: current.mode === 'General' ? undefined : 'complete'
               }
             : entry
         )
       }));
+      await refreshUsage(appStateRef.current.session);
+      activeAssistantIdRef.current = null;
     } catch (error) {
       const interrupted = abortController.signal.aborted;
       streamAbortRef.current = null;
@@ -272,6 +334,7 @@ export function App({ state }: AppProps): React.JSX.Element {
                 ? {
                     ...entry,
                     body:
+                      streamedAssistantTextRef.current ||
                       entry.body ||
                       '[No assistant response saved due to provider error.]',
                     draftState: nextDraftState
@@ -282,38 +345,225 @@ export function App({ state }: AppProps): React.JSX.Element {
           ].flat()
         };
       });
+      await refreshUsage(appStateRef.current.session);
+      activeAssistantIdRef.current = null;
     }
   }
 
-  async function handleChunkInput(chunk: string): Promise<void> {
-    const normalized = chunk.replaceAll('\r', '\n');
-    const parts = normalized.split('\n');
+  async function runCommand(raw: string): Promise<void> {
+    try {
+      const parsed = parseCommand(raw);
+      const command = getCommandDefinition(parsed.name);
 
-    for (let index = 0; index < parts.length; index += 1) {
-      const part = parts[index];
-
-      if (part) {
-        const nextValue = inputRef.current + part;
-        inputRef.current = nextValue;
-        setInput(nextValue);
+      if (!command) {
+        throw new Error(`Unknown command: /${parsed.name}. Try /help.`);
       }
 
-      if (index < parts.length - 1) {
-        await submitInput();
+      const result = await command.run(parsed, {
+        cwd: workingDirectory,
+        session: appStateRef.current.session,
+        transcript: appStateRef.current.transcript,
+        providerConfig: appStateRef.current.providerConfig,
+        mode: appStateRef.current.mode,
+        globalConfig: appStateRef.current.globalConfig,
+        projectConfig: appStateRef.current.projectConfig
+      });
+
+      setAppState((current) => ({
+        ...current,
+        mode: result.mode ?? current.mode,
+        phase:
+          result.phase ??
+          resolvePhaseAfterCommand(result.mode ?? current.mode, current.phase),
+        provider: result.provider ?? current.provider,
+        model: result.model ?? current.model,
+        providerConfig: result.providerConfig ?? current.providerConfig,
+        commandReference: current.commandReference,
+        globalConfig: current.globalConfig,
+        projectConfig: current.projectConfig,
+        session: result.session ?? current.session,
+        transcript: [...current.transcript, ...result.entries]
+      }));
+
+      await refreshUsage(result.session ?? appStateRef.current.session);
+
+      if (result.shouldExit) {
+        exit();
       }
+    } catch (error) {
+      void logError('command', error);
+      setAppState((current) => ({
+        ...current,
+        transcript: [
+          ...current.transcript,
+          {
+            id: createId('command-error'),
+            kind: 'error',
+            title: 'Command Error',
+            body:
+              error instanceof Error ? error.message : 'Unknown command error.'
+          }
+        ]
+      }));
     }
   }
+
+  function flushAssistantText(force: boolean): void {
+    const assistantId = activeAssistantIdRef.current;
+
+    if (!assistantId) {
+      return;
+    }
+
+    if (flushTimerRef.current) {
+      globalThis.clearTimeout(flushTimerRef.current);
+      flushTimerRef.current = null;
+    }
+
+    if (!force) {
+      flushTimerRef.current = globalThis.setTimeout(() => {
+        flushAssistantText(true);
+      }, 75);
+      return;
+    }
+
+    if (!showStreamingDraft || commandPaletteOpen) {
+      return;
+    }
+
+    setAppState((current) => ({
+      ...current,
+      transcript: current.transcript.map((entry) =>
+        entry.id === assistantId
+          ? { ...entry, body: streamedAssistantTextRef.current }
+          : entry
+      )
+    }));
+  }
+
+  async function refreshUsage(session: AppState['session']): Promise<void> {
+    const summaries = await readTelemetrySummaries(session);
+
+    setAppState((current) => ({
+      ...current,
+      usage: {
+        session: summarizeSessionUsage(summaries),
+        lastRequest: summaries.at(-1) ?? null
+      }
+    }));
+  }
+
+  async function runPaletteAction(): Promise<void> {
+    const item = getPaletteItems(appStateRef.current.isStreaming)[
+      selectedPaletteIndex
+    ];
+
+    if (!item || item.disabled) {
+      return;
+    }
+
+    if (item.label === 'Resume / Close Menu') {
+      setCommandPaletteOpen(false);
+      return;
+    }
+
+    if (item.label === 'Interrupt Current Response') {
+      streamAbortRef.current?.abort();
+      setCommandPaletteOpen(false);
+      return;
+    }
+
+    if (item.label === 'Summarize Session So Far') {
+      setCommandPaletteOpen(false);
+      setAppState((current) => ({
+        ...current,
+        transcript: [
+          ...current.transcript,
+          {
+            id: createId('user'),
+            kind: 'user',
+            body: '/summarize-session'
+          }
+        ]
+      }));
+      await runCommand('/summarize-session');
+      return;
+    }
+
+    if (item.label === 'Start New Session Here') {
+      const nextState = await bootstrapApp(workingDirectory);
+      setAppState(nextState);
+      setInputState({ value: '', cursor: 0 });
+      setSelectedSuggestion(0);
+      setSelectedPaletteIndex(0);
+      setShowStreamingDraft(false);
+      setCommandPaletteOpen(false);
+      activeAssistantIdRef.current = null;
+      streamedAssistantTextRef.current = '';
+      streamAbortRef.current = null;
+      return;
+    }
+
+    if (item.label === 'Toggle Live Draft View') {
+      setShowStreamingDraft((current) => {
+        const next = !current;
+        if (next) {
+          flushAssistantText(true);
+        }
+        return next;
+      });
+      setCommandPaletteOpen(false);
+      return;
+    }
+
+    if (item.label === 'Exit TAW (Session Stays Saved)') {
+      exit();
+    }
+  }
+
+  function updateInputState(
+    updater: (current: InputState) => InputState
+  ): void {
+    setInputState((current) => updater(current));
+  }
+
+  const displayValue = toDisplayValue(inputState.value);
+  const displayCursor = toDisplayCursor(inputState.value, inputState.cursor);
+  const paletteItems = getPaletteItems(appState.isStreaming);
 
   return (
     <Box flexDirection="column" paddingX={1} paddingY={1}>
       <Header state={appState} />
-      <Transcript items={appState.transcript} />
+      <Transcript
+        items={appState.transcript}
+        streamingAssistantId={activeAssistantIdRef.current}
+        showStreamingDraft={showStreamingDraft}
+      />
+      {commandPaletteOpen ? (
+        <CommandPalette
+          items={paletteItems}
+          selectedIndex={selectedPaletteIndex}
+          mode={appState.mode}
+          phase={appState.phase}
+          streaming={appState.isStreaming}
+          artifacts={appState.session.metadata.artifacts.map(
+            (artifact) => artifact.path
+          )}
+        />
+      ) : null}
       <InputBar
-        value={input}
+        value={displayValue}
+        cursor={displayCursor}
         suggestions={suggestions}
         selectedSuggestion={selectedSuggestion}
+        locked={appState.isStreaming}
       />
-      <Footer state={appState} />
+      <Footer
+        state={appState}
+        workingDirectory={workingDirectory}
+        showStreamingDraft={showStreamingDraft}
+        commandPaletteOpen={commandPaletteOpen}
+      />
     </Box>
   );
 }
@@ -332,4 +582,36 @@ function getSuggestions(
       name: command.name,
       description: command.description
     }));
+}
+
+function getPaletteItems(streaming: boolean): CommandPaletteItem[] {
+  return [
+    {
+      label: 'Resume / Close Menu',
+      description: 'Return to the transcript and input.'
+    },
+    {
+      label: 'Interrupt Current Response',
+      description: 'Abort the active provider request.',
+      disabled: !streaming
+    },
+    {
+      label: 'Toggle Live Draft View',
+      description: 'Reveal or hide the in-progress assistant text.'
+    },
+    {
+      label: 'Summarize Session So Far',
+      description: 'Run /summarize-session for the current session.',
+      disabled: streaming
+    },
+    {
+      label: 'Start New Session Here',
+      description: 'Create a fresh session in the current working directory.',
+      disabled: streaming
+    },
+    {
+      label: 'Exit TAW (Session Stays Saved)',
+      description: 'Leave the app. Session files remain on disk.'
+    }
+  ];
 }

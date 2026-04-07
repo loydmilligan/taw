@@ -94,7 +94,8 @@ Expected result:
 ### QA-04 Project initialization flow
 
 1. In [qa-fixtures/non-project-workspace](/home/loydmilligan/Projects/taw/qa-fixtures/non-project-workspace), run `/init`.
-2. Confirm `.ai/config.json`, `.ai/sessions/`, and `.ai/assistant/COMMANDS.md` are created.
+2. Confirm `.ai/config.json`, `.ai/sessions/`, and these assistant files are created under `.ai/assistant/`:
+   `AGENTS.md`, `SOUL.md`, `USER.md`, `USER.summary.md`, `MEMORY.md`, `MEMORY.summary.md`, and `COMMANDS.md`.
 3. Exit the app.
 4. Relaunch `corepack pnpm dev` from the same fixture.
 5. Confirm the header now shows project-aware state.

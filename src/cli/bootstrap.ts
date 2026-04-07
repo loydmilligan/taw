@@ -3,6 +3,8 @@ import { createSession } from '../core/sessions/session-manager.js';
 import { loadConfig } from '../services/config/loader.js';
 import { ensureAssistantReferenceFiles } from '../core/context/assistant-files.js';
 import { commandRegistry } from '../commands/registry.js';
+import { summarizeSessionUsage } from '../core/telemetry/derivation.js';
+import { readTelemetrySummaries } from '../core/telemetry/store.js';
 
 export async function bootstrapApp(cwd: string): Promise<AppState> {
   const config = await loadConfig(cwd);
@@ -11,7 +13,12 @@ export async function bootstrapApp(cwd: string): Promise<AppState> {
     provider: config.providerConfig.provider,
     model: config.providerConfig.model
   });
-  const references = await ensureAssistantReferenceFiles(cwd, session, commandRegistry);
+  const references = await ensureAssistantReferenceFiles(
+    cwd,
+    session,
+    commandRegistry
+  );
+  const summaries = await readTelemetrySummaries(session);
 
   return {
     mode: 'General',
@@ -24,7 +31,14 @@ export async function bootstrapApp(cwd: string): Promise<AppState> {
     projectConfig: config.projectConfig,
     isStreaming: false,
     session,
-    transcript: createInitialTranscript(session.storageMode, session.sessionDir)
+    transcript: createInitialTranscript(
+      session.storageMode,
+      session.sessionDir
+    ),
+    usage: {
+      session: summarizeSessionUsage(summaries),
+      lastRequest: summaries.at(-1) ?? null
+    }
   };
 }
 

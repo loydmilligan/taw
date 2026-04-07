@@ -28,7 +28,18 @@ export const initCommand: CommandDefinition = {
     const { commandRegistry } = await import('./registry.js');
     await ensureProjectAssistantReferenceFiles(context.cwd, commandRegistry);
 
-    created.push('.ai/', '.ai/sessions/', '.ai/assistant/', '.ai/assistant/COMMANDS.md');
+    created.push(
+      '.ai/',
+      '.ai/sessions/',
+      '.ai/assistant/',
+      '.ai/assistant/AGENTS.md',
+      '.ai/assistant/SOUL.md',
+      '.ai/assistant/USER.md',
+      '.ai/assistant/USER.summary.md',
+      '.ai/assistant/MEMORY.md',
+      '.ai/assistant/MEMORY.summary.md',
+      '.ai/assistant/COMMANDS.md'
+    );
 
     try {
       await readFile(configPath, 'utf8');

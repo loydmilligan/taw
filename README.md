@@ -41,6 +41,7 @@ The default provider is OpenRouter. Launching TAW from any directory starts a se
 - `/capture-issue <summary> [note]`
 - `/ideas`
 - `/issues`
+- `/session-usage`
 - `/config`
 - `/init`
 - `/summarize-session`
@@ -53,6 +54,27 @@ The default provider is OpenRouter. Launching TAW from any directory starts a se
 Global config lives at `~/.config/taw/config.json`.
 
 Project config lives at `.ai/config.json`.
+
+## Assistant Memory Files
+
+TAW now scaffolds durable assistant context in both the global config dir and any initialized project:
+
+- `AGENTS.md`
+- `SOUL.md`
+- `USER.md`
+- `USER.summary.md`
+- `MEMORY.md`
+- `MEMORY.summary.md`
+- `COMMANDS.md`
+
+Use these files as follows:
+
+- `AGENTS.md` for operating rules and product boundaries
+- `SOUL.md` for tone and conversational style
+- `USER.md` for stable facts about you
+- `MEMORY.md` for durable cross-session context and decisions
+
+TAW injects `AGENTS.md`, `SOUL.md`, and the generated `USER` and `MEMORY` summaries on every turn. It also retrieves matching raw sections from `USER.md` and `MEMORY.md` when the current message overlaps with them.
 
 Global config example:
 
@@ -89,3 +111,5 @@ Manual QA steps and ready-made fixtures live in [docs/manual-qa-checklist.md](/h
 Memory design notes live in [docs/memory-architecture.md](/home/loydmilligan/Projects/taw/docs/memory-architecture.md).
 
 Versioning policy lives in [docs/versioning.md](/home/loydmilligan/Projects/taw/docs/versioning.md). Release history lives in [CHANGELOG.md](/home/loydmilligan/Projects/taw/CHANGELOG.md).
+
+Telemetry details live in [docs/ai-telemetry.md](/home/loydmilligan/Projects/taw/docs/ai-telemetry.md).

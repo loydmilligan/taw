@@ -12,6 +12,7 @@ import { initCommand } from './init.js';
 import { issuesCommand } from './issues.js';
 import { statusCommand } from './status.js';
 import { summarizeSessionCommand } from './summarize-session.js';
+import { sessionUsageCommand } from './session-usage.js';
 import { workflowCommand } from './workflow.js';
 import type { CommandDefinition } from './types.js';
 
@@ -25,6 +26,7 @@ const coreCommands: CommandDefinition[] = [
   captureIssueCommand,
   ideasCommand,
   issuesCommand,
+  sessionUsageCommand,
   configCommand,
   initCommand,
   summarizeSessionCommand,

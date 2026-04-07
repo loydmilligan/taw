@@ -1,0 +1,20 @@
+generation_id,created_at,cost_total,cost_web_search,cost_cache,cost_file_processing,byok_usage_inference,tokens_prompt,tokens_completion,tokens_reasoning,tokens_cached,model_permaslug,provider_name,variant,cancelled,streamed,user,finish_reason_raw,finish_reason_normalized,generation_time_ms,time_to_first_token_ms,app_name,api_key_name
+gen-1775555039-3f8cZ4SJ64I33L2Xsr5b,2026-04-07 09:43:59.022,0.000963,,,,0,9152,1265,1024,0,openai/gpt-5-nano-2025-08-07,OpenAI,standard,false,true,,completed,stop,9886,8987,,taw
+gen-1775555011-D6WkMqwmYgLPQ5vgzi5r,2026-04-07 09:43:31.865,0.000789,,-0.000545,,0,8019,1333,0,6057,google/gemini-2.5-flash-lite,Google,standard,false,true,,STOP,stop,9872,430,,taw
+gen-1775554389-TjFU6Bbjcm9xLyn9KIX6,2026-04-07 09:33:09.085,0.000688,,-0.000453,,0,6743,1171,0,5042,google/gemini-2.5-flash-lite,Google,standard,false,true,,STOP,stop,6439,459,,taw
+gen-1775554380-DdRAIVDCvRu7INeAyd6Z,2026-04-07 09:33:00.891,0.001032,,,,0,5513,1203,0,0,google/gemini-2.5-flash-lite,Google,standard,false,true,,STOP,stop,7509,438,,taw
+gen-1775554373-KoqOvKuKzow4y94MQc3C,2026-04-07 09:32:53.288,0.000505,,-0.000361,,0,4425,1063,0,4019,google/gemini-2.5-flash-lite,Google,standard,false,true,,STOP,stop,6886,363,,taw
+gen-1775554367-AvVWGVn2wJ0VMF83OCLj,2026-04-07 09:32:47.205,0.00073,,,,0,3429,969,0,0,google/gemini-2.5-flash-lite,Google,standard,false,true,,STOP,stop,5615,305,,taw
+gen-1775554362-EQBz4m0x68bsnAhKLN0H,2026-04-07 09:32:42.160,0.000583,,,,0,2595,810,0,0,google/gemini-2.5-flash-lite,Google,standard,false,true,,STOP,stop,4633,382,,taw
+gen-1775554312-x0Q5k6HocCETf4SbkWZk,2026-04-07 09:31:52.080,0.000264,,,0,0,1183,705,0,0,mistralai/mistral-7b-instruct-v0.1,Cloudflare,standard,false,true,,stop,stop,49020,801,,taw
+gen-1775554281-I3qbdZDuSsAudc4KzOXy,2026-04-07 09:31:21.592,0.000206,,,0,0,1063,470,0,0,mistralai/mistral-7b-instruct-v0.1,Cloudflare,standard,false,true,,stop,stop,30086,733,,taw
+gen-1775554243-FSoUK0KfXbZyWsUBVGvu,2026-04-07 09:30:43.201,0.000222,,,0,0,1027,579,0,0,mistralai/mistral-7b-instruct-v0.1,Cloudflare,standard,false,true,,stop,stop,37857,634,,taw
+gen-1775552171-R2SlniROFpNIY7WzYACN,2026-04-07 08:56:10.907,0.000103,,,0,0,524,242,0,0,mistralai/mistral-7b-instruct-v0.1,Cloudflare,standard,false,true,,stop,stop,17172,619,,taw
+gen-1775551896-lR73lithFHmcBF0NSXOL,2026-04-07 08:51:36.106,0.000084,,,0,0,112,382,0,0,mistralai/mistral-7b-instruct-v0.1,Cloudflare,standard,false,true,,stop,stop,28259,565,,taw
+gen-1775549864-5DzZ6pOYLSlGpGpb95tZ,2026-04-07 08:17:44.810,0.000094,,,0,0,101,439,0,0,mistralai/mistral-7b-instruct-v0.1,Cloudflare,standard,false,true,,stop,stop,29051,631,,taw
+gen-1775529791-WW88pD1tGjZt6UFCY3tf,2026-04-07 02:43:11.489,0.000342,,,0,0,217,25,0,0,anthropic/claude-4.5-haiku-20251001,Amazon Bedrock,standard,false,true,,end_turn,stop,6033,5865,natsh,natsh-laptop
+gen-1775528525-YHWx61a8ePGns9VQJVzd,2026-04-07 02:21:59.933,0.000242,,,0,0,212,6,0,0,anthropic/claude-4.5-haiku-20251001,Amazon Bedrock,standard,false,true,,end_turn,stop,738,607,natsh,natsh-laptop
+gen-1775528409-yi5rctb7PlF0zOBEZvxD,2026-04-07 02:20:09.113,0.000257,,,0,0,212,9,0,0,anthropic/claude-4.5-haiku-20251001,Amazon Bedrock,standard,false,true,,end_turn,stop,1080,876,natsh,natsh-laptop
+gen-1775521211-WvQV3tdrD9JiJK7TDDmi,2026-04-07 00:20:11.154,0.000269,,,0,0,219,10,0,0,anthropic/claude-4.5-haiku-20251001,Amazon Bedrock,standard,false,true,,end_turn,stop,1428,1329,natsh,natsh-laptop
+gen-1775521157-VffAZSF4K8lL8bsi840H,2026-04-07 00:19:17.040,0.000269,,,0,0,219,10,0,0,anthropic/claude-4.5-haiku-20251001,Amazon Bedrock,standard,false,true,,end_turn,stop,1363,861,natsh,natsh-laptop
+gen-1775521096-Erln3HeYuWkhGqoI1UzU,2026-04-07 00:18:16.178,0.000817,,,0,0,217,200,199,0,xiaomi/mimo-v2-pro-20260318,Xiaomi,standard,false,true,,length,length,3531,1083,natsh,natsh-laptop

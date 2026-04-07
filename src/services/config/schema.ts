@@ -5,13 +5,17 @@ export const projectConfigSchema = z.object({
   defaultAttachedDirs: z.array(z.string()).default([]),
   preferredArtifactOutputs: z.array(z.string()).default(['artifacts']),
   promptOverrides: z.record(z.string(), z.string()).default({}),
+  maxCompletionTokens: z.number().int().positive().max(8192).optional(),
   provider: z.enum(['openrouter', 'openai', 'anthropic']).optional(),
   model: z.string().optional()
 });
 
 export const globalConfigSchema = z.object({
-  defaultProvider: z.enum(['openrouter', 'openai', 'anthropic']).default('openrouter'),
+  defaultProvider: z
+    .enum(['openrouter', 'openai', 'anthropic'])
+    .default('openrouter'),
   defaultModel: z.string().default('openrouter/auto'),
+  maxCompletionTokens: z.number().int().positive().max(8192).default(1200),
   theme: z
     .object({
       accent: z.string().optional()

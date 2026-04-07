@@ -8,6 +8,18 @@ export interface ProviderConfig {
   model: string;
   apiKey?: string;
   baseUrl?: string;
+  maxCompletionTokens?: number;
+}
+
+export interface ProviderStreamStartInfo {
+  generationId?: string | null;
+  requestId?: string | null;
+  providerRequestId?: string | null;
+  modelResolved?: string | null;
+}
+
+export interface ProviderStreamFinalInfo {
+  finishReason?: string | null;
 }
 
 export interface ProviderAdapter {
@@ -15,7 +27,11 @@ export interface ProviderAdapter {
   streamMessage(
     messages: ChatMessage[],
     config: ProviderConfig,
-    options?: { signal?: AbortSignal }
+    options?: {
+      signal?: AbortSignal;
+      onStart?: (info: ProviderStreamStartInfo) => void;
+      onFinal?: (info: ProviderStreamFinalInfo) => void;
+    }
   ): AsyncGenerator<string, void, void>;
   validateConfig(config: ProviderConfig): void;
   normalizeError(error: unknown): Error;

@@ -1,23 +1,40 @@
 import Anthropic from '@anthropic-ai/sdk';
-import type { ChatMessage, ProviderAdapter, ProviderConfig } from '../../types/provider.js';
+import type {
+  ChatMessage,
+  ProviderAdapter,
+  ProviderConfig,
+  ProviderStreamFinalInfo,
+  ProviderStreamStartInfo
+} from '../../types/provider.js';
 
 export class AnthropicProvider implements ProviderAdapter {
-  sendMessage(messages: ChatMessage[], config: ProviderConfig): Promise<string> {
+  sendMessage(
+    messages: ChatMessage[],
+    config: ProviderConfig
+  ): Promise<string> {
     return collectStream(this.streamMessage(messages, config));
   }
 
   async *streamMessage(
     messages: ChatMessage[],
     config: ProviderConfig,
-    options?: { signal?: AbortSignal }
+    options?: {
+      signal?: AbortSignal;
+      onStart?: (info: ProviderStreamStartInfo) => void;
+      onFinal?: (info: ProviderStreamFinalInfo) => void;
+    }
   ): AsyncGenerator<string, void, void> {
     this.validateConfig(config);
 
-    const system = messages.find((message) => message.role === 'system')?.content;
+    const system = messages.find(
+      (message) => message.role === 'system'
+    )?.content;
     const conversation = messages
       .filter((message) => message.role !== 'system')
       .map((message) => ({
-        role: (message.role === 'assistant' ? 'assistant' : 'user') as 'assistant' | 'user',
+        role: (message.role === 'assistant' ? 'assistant' : 'user') as
+          | 'assistant'
+          | 'user',
         content: message.content
       }));
 
@@ -26,10 +43,12 @@ export class AnthropicProvider implements ProviderAdapter {
       baseURL: config.baseUrl
     });
 
+    options?.onStart?.({});
+
     const stream = client.messages.stream({
       model: config.model,
       system,
-      max_tokens: 2048,
+      max_tokens: config.maxCompletionTokens ?? 1200,
       messages: conversation
     });
 
@@ -43,12 +62,16 @@ export class AnthropicProvider implements ProviderAdapter {
       );
     }
 
-    yield await stream.finalText();
+    const finalText = await stream.finalText();
+    options?.onFinal?.({});
+    yield finalText;
   }
 
   validateConfig(config: ProviderConfig): void {
     if (!config.apiKey) {
-      throw new Error('Missing API key. Set ANTHROPIC_API_KEY or configure the provider in ~/.config/taw/config.json.');
+      throw new Error(
+        'Missing API key. Set ANTHROPIC_API_KEY or configure the provider in ~/.config/taw/config.json.'
+      );
     }
   }
 
@@ -61,7 +84,9 @@ export class AnthropicProvider implements ProviderAdapter {
   }
 }
 
-async function collectStream(stream: AsyncGenerator<string, void, void>): Promise<string> {
+async function collectStream(
+  stream: AsyncGenerator<string, void, void>
+): Promise<string> {
   let output = '';
 
   for await (const chunk of stream) {
