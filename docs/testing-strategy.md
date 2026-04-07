@@ -1,121 +1,82 @@
 # Testing Strategy
 
+Applies to baseline `0.1.0-beta.2`.
+
 ## Testing philosophy
 
-Testing exists to catch important issues before handoff, not to become a project of its own.
+Testing should catch meaningful regressions without turning the repo into a UI-test project.
 
-The goal is:
-- fast feedback
-- confidence in core flows
-- low maintenance burden
+The target mix is:
 
-## Core rule
+- manual testing for terminal behavior and end-to-end flows
+- targeted automated tests for critical filesystem, command, and state behavior
 
-Do **not** write brittle UI tests that merely confirm the current screen rendering.
+## Manual testing
 
-Instead:
-- define acceptance criteria
-- build the UI and behavior to meet them
-- add only a small number of tests that verify important behavior
+Manual testing is the primary source of confidence for:
 
-## Testing mix
-
-### Manual testing — primary
-Use manual testing for:
-- end-to-end conversation flow
-- terminal UX and readability
+- launch behavior
+- project/general storage mode clarity
 - command discoverability
-- mode transitions
-- streaming behavior
-- artifact usefulness
+- streaming and interruption behavior
+- structured-mode draft/finalize flow
+- artifact quality
 
-Codex should perform manual runs whenever possible during implementation and before handoff.
+Use the formal playbook in [docs/manual-qa-checklist.md](/home/loydmilligan/Projects/taw/docs/manual-qa-checklist.md).
 
-### Automated tests — targeted
-Use automated tests for:
-- session path creation
+Use the ready-made fixtures in [qa-fixtures/README.md](/home/loydmilligan/Projects/taw/qa-fixtures/README.md) instead of inventing ad hoc test projects.
+
+## Automated testing
+
+Automated coverage should stay focused on behavior with real regression value:
+
+- session path creation and metadata persistence
 - command parsing
-- config loading/override precedence
 - artifact writing
 - provider abstraction behavior with mocks
-- summary file generation input/output shape
+- prompt-context composition
+- structured draft/finalize state transitions
 
 Avoid:
-- snapshot-heavy render tests
-- tests tied to exact colors, spacing, or box drawing
-- overmocked pseudo-integration tests
 
-## Suggested tools
-- Vitest for tests
-- built-in mocking where possible
+- snapshot-heavy TUI tests
+- tests tied to exact terminal layout details
+- overmocked pseudo-integrations that do not protect real workflows
 
 ## Required automated coverage
 
 ### Session manager
-Must verify:
+
 - project mode path resolution
 - general mode path resolution
 - folder creation behavior
-- idempotent file creation where relevant
+- metadata persistence
 
-### Command parser
-Must verify:
+### Commands
+
 - slash command detection
-- argument parsing for `/attach-dir`
-- graceful error for unknown commands
+- argument parsing
+- graceful handling of unknown commands
+- finalize behavior only using valid completed drafts
 
 ### Artifact engine
-Must verify:
+
 - files are written to the session artifact folder
-- names are valid and stable enough
+- file names are safe and stable enough
 - artifacts are recorded in session metadata
 
-### Config loader
-Must verify:
-- global config loads
-- project config overrides global config
-- missing config handled cleanly
+### Context and prompt setup
 
-## Manual QA checklist
+- project config inclusion
+- attached directory inclusion
+- recent artifact inclusion
+- session summary inclusion
 
-### General launch
-- [ ] Launch from a random non-project directory
-- [ ] Confirm session starts
-- [ ] Confirm next actions are visible
+## Release expectation
 
-### Init flow
-- [ ] Run `/init`
-- [ ] Confirm `.ai/` structure is created
-- [ ] Confirm rerunning does not break state
+Before cutting a beta tag:
 
-### Attach dir flow
-- [ ] Run `/attach-dir <path>`
-- [ ] Confirm status updates
-- [ ] Confirm invalid path gives useful guidance
-
-### Brainstorm flow
-- [ ] Start `/brainstorm`
-- [ ] Hold a realistic planning conversation
-- [ ] Confirm at least one useful markdown artifact is created
-
-### Workflow flow
-- [ ] Start `/workflow`
-- [ ] Provide a realistic workflow review scenario
-- [ ] Confirm output quality is useful and saved
-
-### Summary flow
-- [ ] Run `/summarize-session`
-- [ ] Confirm summary file exists and is readable
-
-### Error handling
-- [ ] Remove API key / break provider config
-- [ ] Confirm UI error is understandable
-- [ ] Confirm next step is suggested
-
-## Exit criteria
-
-The build is acceptable when:
-- core flows work manually
-- targeted automated tests pass
-- no high-severity file-loss or session-loss bugs remain
-- the app feels stable enough for daily personal use
+1. Run the targeted automated suite.
+2. Run typecheck, lint, and build.
+3. Run the manual QA playbook against the included fixtures.
+4. Record any remaining gaps in `KNOWN_LIMITATIONS.md`.

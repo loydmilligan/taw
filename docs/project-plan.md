@@ -1,150 +1,127 @@
 # Project Plan
 
-## Delivery strategy
+Applies to baseline `0.1.0-beta.2`.
 
-Build a lean but polished beta in **6 phases**, each ending with a runnable checkpoint.
+## Roadmap status
 
-## Phase 0 — Repo bootstrap
-### Goals
-- initialize Node + TypeScript repo
-- set up pnpm, linting, formatting, basic scripts
-- create basic folder structure
-- create Dockerfile for reproducible runs
-- add docs references in repo
+TAW is past initial bootstrap and is now in beta-hardening work. The product already supports general chat, project-aware sessions, structured brainstorming/workflow modes, artifact writing, summaries, and capture commands. The current focus is reliability, clarity, and release discipline.
 
-### Deliverables
-- runnable `pnpm dev`
-- clean repository structure
-- README with startup instructions
+## Phase status
 
-## Phase 1 — App shell and session backbone
-### Goals
-- build TUI shell with header, transcript pane, footer hint rail
-- start sessions on launch
-- create session folder and metadata
-- implement general-mode fallback
+### Phase 0 - Repo bootstrap
 
-### Deliverables
-- basic app renders
-- session folders created correctly
-- session path visible in UI
-- launch works inside tmux
+Status: complete
 
-## Phase 2 — Command system and core project commands
-### Goals
-- implement slash command parser
-- implement `/help`
-- implement `/status`
-- implement `/init`
-- implement `/attach-dir`
+Delivered:
 
-### Deliverables
-- initialize project
-- attach directory
-- status reflects state changes
-- command errors are graceful
+- Node + TypeScript + pnpm setup
+- linting, formatting, scripts, Dockerfile
+- baseline docs and workflows
 
-## Phase 3 — Provider layer and streaming chat
-### Goals
-- implement provider abstraction
-- implement OpenRouter first
-- add OpenAI-compatible path
-- add Anthropic-compatible path if straightforward
-- stream assistant output into transcript
+### Phase 1 - App shell and session backbone
 
-### Deliverables
-- working chat with API key config
-- provider/model visible in header
-- robust common error handling
+Status: complete
 
-## Phase 4 — Mode system and artifact writing
-### Goals
-- add mode-specific system prompts
-- implement `/brainstorm`
-- implement `/workflow`
-- add markdown artifact writer
-- create/update session notes file
+Delivered:
 
-### Deliverables
-- useful planning sessions
-- useful workflow review sessions
-- artifact files written automatically
+- Ink TUI shell with header, transcript, footer
+- session creation on launch
+- general/project storage roots
+- visible session path and provider/model context
 
-## Phase 5 — Summaries and polish
-### Goals
-- implement `/summarize-session`
-- generate session summary markdown
-- improve visual hierarchy
-- improve next-step hints
-- add light manual QA scripts/checklists
-- add targeted tests
+### Phase 2 - Command system and core project commands
 
-### Deliverables
-- coherent beta experience
-- summary generation
-- confidence for user testing
+Status: complete
 
-## Phase 6 — Beta hardening
-### Goals
-- manual end-to-end walkthroughs
-- bug fixes
-- cleanup prompts/templates
-- improve command discoverability
-- keep repo tidy
+Delivered:
 
-### Deliverables
-- beta tag
-- clean issue list / known limitations
-- acceptable stability for daily personal use
+- slash command parser and registry
+- `/help`, `/status`, `/init`, `/attach-dir`
+- capture and listing commands for ideas/issues
+- graceful command errors in transcript
 
-## Sequence notes
+### Phase 3 - Provider layer and streaming chat
 
-Do not start with:
-- elaborate test architecture
-- broad RAG support
-- plugin architecture
-- fancy pane systems
-- many integrations
+Status: partial
 
-Start with:
-- one solid shell
-- one clean session model
-- one good provider abstraction
-- two useful modes
+Delivered:
 
-## Risks and mitigations
+- provider abstraction
+- OpenRouter-first path
+- OpenAI-compatible path
+- Anthropic-compatible path
+- streaming assistant output into transcript
 
-### Risk: UI complexity grows too fast
-Mitigation:
-- keep one main transcript pane
-- keep header/footer stable
-- avoid sidebars in beta
+Remaining:
 
-### Risk: provider integration churn
-Mitigation:
-- provider abstraction early
-- explicit API-based config
-- keep model config user-driven
+- broader live-provider QA across real accounts
+- smoother Anthropic streaming parity
 
-### Risk: weak mode prompts
-Mitigation:
-- ship strong defaults
-- refine from real use
-- keep prompts editable
+### Phase 4 - Mode system and artifact writing
 
-### Risk: too much time on tests
-Mitigation:
-- test critical paths only
-- use manual acceptance for interaction-heavy behavior
+Status: partial
+
+Delivered:
+
+- mode-specific prompts for Brainstorm, Workflow Review, and Workflow Generate
+- shared chat engine and prompt context injection
+- explicit draft lifecycle with phase tracking
+- `/brainstorm`, `/workflow`, `/finalize`, `/exit-mode`
+- mode-definition-driven artifact writing
+
+Remaining:
+
+- further prompt tuning from real sessions
+- stronger finalize/readiness heuristics if users need them
+
+### Phase 5 - Summaries and polish
+
+Status: partial
+
+Delivered:
+
+- `/summarize-session`
+- session summary file generation
+- improved empty states and footer guidance
+- targeted tests for config, sessions, artifacts, prompt context, and finalize behavior
+- formal manual QA playbook with reusable fixtures
+
+Remaining:
+
+- more real-world summary quality evaluation
+- more targeted automated coverage around summaries and provider error paths
+
+### Phase 6 - Beta hardening
+
+Status: partial
+
+Delivered:
+
+- changelog and versioning policy
+- known limitations tracking
+- roadmap/task refresh tied to shipped behavior
+- reusable manual QA data for regression checks
+
+Remaining:
+
+- execute the full manual playbook with live provider credentials
+- tag the next beta after the full release checklist is clean
+
+## Current release goals
+
+- keep structured-mode drafts reliable
+- keep project/general state obvious
+- preserve session data and artifact paths
+- make manual verification repeatable for another person
 
 ## Release checklist
 
-- [ ] fresh project `/init` works
-- [ ] general-mode launch works
-- [ ] attached-dir sessions work
-- [ ] streaming chat stable
-- [ ] `/brainstorm` produces useful artifact
-- [ ] `/workflow` review produces useful artifact
-- [ ] `/summarize-session` writes summary
-- [ ] UI clearly communicates next steps
-- [ ] logs and errors are understandable
+- [x] fresh project `/init` works
+- [x] general-mode launch works
+- [x] attached-dir sessions work
+- [x] structured modes support explicit finalize/exit
+- [x] prompt context is injected into chat setup
+- [x] `/summarize-session` writes a summary file
+- [x] roadmap and release-facing docs match shipped behavior
+- [ ] full live-provider manual walkthrough completed for this baseline
+- [ ] beta tag cut after release verification

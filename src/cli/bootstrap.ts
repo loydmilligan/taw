@@ -15,6 +15,7 @@ export async function bootstrapApp(cwd: string): Promise<AppState> {
 
   return {
     mode: 'General',
+    phase: 'idle',
     provider: session.metadata.provider,
     model: session.metadata.model,
     providerConfig: config.providerConfig,

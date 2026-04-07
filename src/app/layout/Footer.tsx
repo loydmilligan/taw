@@ -10,6 +10,8 @@ interface FooterProps {
 export function Footer({ state }: FooterProps): React.JSX.Element {
   const nextAction = state.isStreaming
     ? 'Streaming response. Press Esc to interrupt.'
+    : state.mode !== 'General'
+      ? 'Review the draft, then use /finalize to save it or /exit-mode to leave the mode.'
     : state.session.storageMode === 'project'
       ? 'Type a message or try /help, /status, /config, /attach-dir, or /init.'
       : 'Type a message, run /init to make this directory project-aware, or use /help for commands.';

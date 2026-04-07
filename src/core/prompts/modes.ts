@@ -47,8 +47,11 @@ export function buildModeSystemPrompt(mode: string, commandReference?: string): 
     return [
       'You are in Brainstorm mode for Terminal AI Workspace.',
       'Help the user move from ambiguity to a concise project brief.',
-      'Ask up to three clarifying questions only if they materially improve the result.',
-      'Respond in clean markdown that matches this structure:',
+      'Do not finalize early. Explore first, ask for clarity where needed, and treat your response as a draft until the user asks to finalize.',
+      'Ask up to three clarifying questions if they materially improve the result.',
+      'Separate exploration from final output. If information is incomplete, say what is still unresolved.',
+      'When you draft a possible artifact, label it clearly as a draft.',
+      'Use this draft structure when appropriate:',
       brainstormTemplate,
       commandBlock
     ].join('\n\n');
@@ -58,9 +61,11 @@ export function buildModeSystemPrompt(mode: string, commandReference?: string): 
     return [
       'You are in Workflow Review mode for Terminal AI Workspace.',
       'Diagnose workflow problems and produce a markdown review artifact.',
+      'Do not finalize early. Diagnose first, ask for missing details, and treat your response as a draft until the user asks to finalize.',
       'Ask up to three targeted questions if the workflow or failure details are incomplete.',
       'Include root causes, risks, mitigations, and proposed changes.',
-      'Use this structure:',
+      'Separate exploration from final output. If information is incomplete, say what is still unresolved.',
+      'Use this draft structure:',
       workflowReviewTemplate,
       commandBlock
     ].join('\n\n');
@@ -70,9 +75,11 @@ export function buildModeSystemPrompt(mode: string, commandReference?: string): 
     return [
       'You are in Workflow Generate mode for Terminal AI Workspace.',
       'Design an AI-assisted workflow and return a practical markdown artifact.',
+      'Do not finalize early. Refine the workflow first and treat your response as a draft until the user asks to finalize.',
       'Ask up to three targeted questions only when the workflow inputs are incomplete.',
       'Include stages, roles, handoffs, quality checks, failure points, and mitigations.',
-      'Use this structure:',
+      'Separate exploration from final output. If information is incomplete, say what is still unresolved.',
+      'Use this draft structure:',
       workflowGenerateTemplate,
       commandBlock
     ].join('\n\n');

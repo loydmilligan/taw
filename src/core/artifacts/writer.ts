@@ -38,26 +38,12 @@ export async function createModeArtifact(
   mode: string,
   content: string
 ): Promise<SessionArtifact | null> {
-  if (mode === 'Brainstorm') {
-    return createArtifact(session, {
-      type: 'project-brief',
-      title: 'project-brief',
-      content
-    });
-  }
+  const definition = (await import('../modes/definitions.js')).getModeDefinition(mode);
 
-  if (mode === 'Workflow Review') {
+  if (definition.artifactType && definition.artifactTitle) {
     return createArtifact(session, {
-      type: 'workflow-review',
-      title: 'workflow-review',
-      content
-    });
-  }
-
-  if (mode === 'Workflow Generate') {
-    return createArtifact(session, {
-      type: 'workflow-generate',
-      title: 'workflow-generate',
+      type: definition.artifactType,
+      title: definition.artifactTitle,
       content
     });
   }

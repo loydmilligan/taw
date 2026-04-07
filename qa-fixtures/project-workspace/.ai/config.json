@@ -1,0 +1,8 @@
+{
+  "projectName": "qa-project-workspace",
+  "defaultAttachedDirs": [],
+  "preferredArtifactOutputs": ["artifacts"],
+  "promptOverrides": {},
+  "provider": "openrouter",
+  "model": "openrouter/auto"
+}

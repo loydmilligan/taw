@@ -9,12 +9,9 @@ import { commandRegistry, getCommandDefinition } from '../commands/registry.js';
 import { isSlashCommand, parseCommand } from '../commands/parser.js';
 import type { TranscriptEntry } from '../types/app.js';
 import { createId } from '../utils/ids.js';
-import { getProviderAdapter } from '../core/providers/index.js';
-import { buildModeSystemPrompt } from '../core/prompts/modes.js';
-import type { ChatMessage } from '../types/provider.js';
-import { appendConversationTurn } from '../core/notes/notes-writer.js';
-import { createModeArtifact } from '../core/artifacts/writer.js';
 import { logError } from '../services/logging/logger.js';
+import { executeChatTurn } from '../core/chat/engine.js';
+import { currentDraftTitle, resolvePhaseAfterCommand } from './state.js';
 
 interface AppProps {
   state: AppState;
@@ -72,7 +69,9 @@ export function App({ state }: AppProps): React.JSX.Element {
     }
 
     if (key.upArrow && suggestions.length > 0) {
-      setSelectedSuggestion((current) => (current - 1 + suggestions.length) % suggestions.length);
+      setSelectedSuggestion(
+        (current) => (current - 1 + suggestions.length) % suggestions.length
+      );
       return;
     }
 
@@ -142,6 +141,12 @@ export function App({ state }: AppProps): React.JSX.Element {
         setAppState((current) => ({
           ...current,
           mode: result.mode ?? current.mode,
+          phase:
+            result.phase ??
+            resolvePhaseAfterCommand(
+              result.mode ?? current.mode,
+              current.phase
+            ),
           provider: result.provider ?? current.provider,
           model: result.model ?? current.model,
           providerConfig: result.providerConfig ?? current.providerConfig,
@@ -165,7 +170,10 @@ export function App({ state }: AppProps): React.JSX.Element {
               id: createId('command-error'),
               kind: 'error',
               title: 'Command Error',
-              body: error instanceof Error ? error.message : 'Unknown command error.'
+              body:
+                error instanceof Error
+                  ? error.message
+                  : 'Unknown command error.'
             }
           ]
         }));
@@ -175,99 +183,105 @@ export function App({ state }: AppProps): React.JSX.Element {
     }
 
     const assistantId = createId('assistant');
-    const messages = buildChatMessages(
-      appStateRef.current.transcript,
-      trimmed,
-      appStateRef.current.mode,
-      appStateRef.current.commandReference
-    );
-    const adapter = getProviderAdapter(appStateRef.current.providerConfig);
-    let assistantText = '';
     const abortController = new AbortController();
     streamAbortRef.current = abortController;
 
     setAppState((current) => ({
       ...current,
       isStreaming: true,
+      phase: 'thinking',
       transcript: [
         ...current.transcript,
         {
           id: assistantId,
           kind: 'assistant',
-          title: 'Assistant',
-          body: ''
+          title: currentDraftTitle(appStateRef.current.mode),
+          body: '',
+          draftState:
+            appStateRef.current.mode === 'General' ? undefined : 'pending'
         }
       ]
     }));
 
     try {
-      adapter.validateConfig(appStateRef.current.providerConfig);
-      await appendConversationTurn(appStateRef.current.session, 'user', trimmed);
-
-      for await (const chunk of adapter.streamMessage(messages, appStateRef.current.providerConfig, {
-        signal: abortController.signal
-      })) {
-        assistantText += chunk;
-        setAppState((current) => ({
-          ...current,
-          transcript: current.transcript.map((entry) =>
-            entry.id === assistantId ? { ...entry, body: assistantText } : entry
-          )
-        }));
-      }
-
-      await appendConversationTurn(appStateRef.current.session, 'assistant', assistantText);
-      const artifact = await createModeArtifact(
-        appStateRef.current.session,
-        appStateRef.current.mode,
-        assistantText
-      );
+      await executeChatTurn({
+        transcript: appStateRef.current.transcript,
+        latestUserInput: trimmed,
+        mode: appStateRef.current.mode,
+        providerConfig: appStateRef.current.providerConfig,
+        commandReference: appStateRef.current.commandReference,
+        session: appStateRef.current.session,
+        projectConfig: appStateRef.current.projectConfig,
+        signal: abortController.signal,
+        onChunk: (assistantText) => {
+          setAppState((current) => ({
+            ...current,
+            transcript: current.transcript.map((entry) =>
+              entry.id === assistantId
+                ? { ...entry, body: assistantText }
+                : entry
+            )
+          }));
+        }
+      });
       streamAbortRef.current = null;
       setAppState((current) => ({
         ...current,
         isStreaming: false,
+        phase: current.mode === 'General' ? 'idle' : 'draft-ready',
         session: appStateRef.current.session,
-        transcript: artifact
-          ? [
-              ...current.transcript,
-              {
-                id: createId('artifact-notice'),
-                kind: 'notice',
-                title: 'Artifact Saved',
-                body: artifact.path
+        transcript: current.transcript.map((entry) =>
+          entry.id === assistantId
+            ? {
+                ...entry,
+                draftState: current.mode === 'General' ? undefined : 'complete'
               }
-            ]
-          : current.transcript
+            : entry
+        )
       }));
     } catch (error) {
-      const normalizedError = adapter.normalizeError(error);
       const interrupted = abortController.signal.aborted;
       streamAbortRef.current = null;
-      void logError('provider', normalizedError);
+      const message =
+        error instanceof Error ? error.message : 'Unknown provider error.';
+      void logError('provider', message);
       const providerErrorEntry: TranscriptEntry = {
         id: createId(interrupted ? 'provider-interrupt' : 'provider-error'),
         kind: interrupted ? 'notice' : 'error',
         title: interrupted ? 'Response Interrupted' : 'Provider Error',
         body: interrupted
           ? 'Streaming stopped by user.'
-          : `${normalizedError.message} Next step: set the provider API key and try again.`
+          : `${message} Next step: set the provider API key and try again.`
       };
 
-      setAppState((current) => ({
-        ...current,
-        isStreaming: false,
-        transcript: [
-          current.transcript.map((entry) =>
-            entry.id === assistantId
-              ? {
-                  ...entry,
-                  body: assistantText || '[No assistant response saved due to provider error.]'
-                }
-              : entry
-          ),
-          providerErrorEntry
-        ].flat()
-      }));
+      setAppState((current) => {
+        const nextDraftState: TranscriptEntry['draftState'] =
+          current.mode === 'General'
+            ? undefined
+            : interrupted
+              ? 'interrupted'
+              : 'failed';
+
+        return {
+          ...current,
+          isStreaming: false,
+          phase: 'idle',
+          transcript: [
+            current.transcript.map((entry) =>
+              entry.id === assistantId
+                ? {
+                    ...entry,
+                    body:
+                      entry.body ||
+                      '[No assistant response saved due to provider error.]',
+                    draftState: nextDraftState
+                  }
+                : entry
+            ),
+            providerErrorEntry
+          ].flat()
+        };
+      });
     }
   }
 
@@ -304,33 +318,9 @@ export function App({ state }: AppProps): React.JSX.Element {
   );
 }
 
-function buildChatMessages(
-  transcript: TranscriptEntry[],
-  latestUserInput: string,
-  mode: string,
-  commandReference: string
-): ChatMessage[] {
-  const priorMessages = transcript
-    .filter((entry) => entry.kind === 'user' || entry.kind === 'assistant')
-    .map((entry) => ({
-      role: entry.kind === 'user' ? 'user' : 'assistant',
-      content: entry.body
-    })) satisfies ChatMessage[];
-
-  return [
-    {
-      role: 'system',
-      content: buildModeSystemPrompt(mode, commandReference)
-    },
-    ...priorMessages,
-    {
-      role: 'user',
-      content: latestUserInput
-    }
-  ];
-}
-
-function getSuggestions(value: string): Array<{ name: string; description: string }> {
+function getSuggestions(
+  value: string
+): Array<{ name: string; description: string }> {
   if (!value.startsWith('/')) {
     return [];
   }
@@ -338,5 +328,8 @@ function getSuggestions(value: string): Array<{ name: string; description: strin
   const query = value.slice(1).trim();
   return commandRegistry
     .filter((command) => command.name.startsWith(query))
-    .map((command) => ({ name: command.name, description: command.description }));
+    .map((command) => ({
+      name: command.name,
+      description: command.description
+    }));
 }

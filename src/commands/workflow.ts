@@ -29,6 +29,7 @@ export const workflowCommand: CommandDefinition = {
     return {
       session: context.session,
       mode,
+      phase: 'idle',
       entries: [
         {
           id: createId('workflow'),
@@ -36,8 +37,8 @@ export const workflowCommand: CommandDefinition = {
           title: mode,
           body:
             submode === 'review'
-              ? 'Workflow review mode is active. Paste the workflow, symptoms, and constraints. TAW will analyze failure points and save a review artifact.'
-              : 'Workflow generate mode is active. Describe the objective, actors, and constraints. TAW will design a workflow artifact and save it automatically.'
+              ? 'Workflow review mode is active. Paste the workflow, symptoms, and constraints. TAW will analyze and iterate first. Use /finalize when you want to save the review artifact.'
+              : 'Workflow generate mode is active. Describe the objective, actors, and constraints. TAW will design and refine first. Use /finalize when you want to save the workflow artifact.'
         }
       ]
     };

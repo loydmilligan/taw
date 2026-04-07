@@ -16,6 +16,7 @@ export interface CommandContext {
 export interface CommandResult {
   session?: SessionRecord;
   mode?: string;
+  phase?: 'idle' | 'thinking' | 'draft-ready';
   providerConfig?: ProviderConfig;
   provider?: string;
   model?: string;
@@ -33,5 +34,8 @@ export interface CommandDefinition {
   name: string;
   description: string;
   usage: string;
-  run: (input: ParsedCommand, context: CommandContext) => Promise<CommandResult>;
+  run: (
+    input: ParsedCommand,
+    context: CommandContext
+  ) => Promise<CommandResult>;
 }

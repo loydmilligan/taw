@@ -2,7 +2,14 @@
 
 TAW is a terminal-native, chat-first AI workspace for planning, brainstorming, workflow design, workflow review, and markdown artifact generation. It is intentionally not a coding agent.
 
-Current baseline: `0.1.0-beta.1`
+Current baseline: `0.1.0-beta.2`
+
+Structured modes now use a draft-first workflow:
+
+- `/brainstorm`
+- `/workflow <generate|review>`
+- `/finalize` to save the current structured draft
+- `/exit-mode` to return to General mode without saving
 
 ## Requirements
 
@@ -27,6 +34,8 @@ The default provider is OpenRouter. Launching TAW from any directory starts a se
 
 - `/brainstorm`
 - `/workflow <generate|review>`
+- `/finalize`
+- `/exit-mode`
 - `/attach-dir <path>`
 - `/capture-idea <summary> [note]`
 - `/capture-issue <summary> [note]`
@@ -75,7 +84,7 @@ Global config example:
 
 ## QA
 
-Manual QA steps live in [docs/manual-qa-checklist.md](/home/loydmilligan/Projects/taw/docs/manual-qa-checklist.md).
+Manual QA steps and ready-made fixtures live in [docs/manual-qa-checklist.md](/home/loydmilligan/Projects/taw/docs/manual-qa-checklist.md) and [qa-fixtures/README.md](/home/loydmilligan/Projects/taw/qa-fixtures/README.md).
 
 Memory design notes live in [docs/memory-architecture.md](/home/loydmilligan/Projects/taw/docs/memory-architecture.md).
 

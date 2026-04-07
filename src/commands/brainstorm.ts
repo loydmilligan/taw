@@ -13,13 +13,13 @@ export const brainstormCommand: CommandDefinition = {
     return {
       session: context.session,
       mode: 'Brainstorm',
+      phase: 'idle',
       entries: [
         {
           id: createId('brainstorm'),
           kind: 'notice',
           title: 'Brainstorm Mode',
-          body:
-            'Brainstorm mode is active. Describe the idea, constraints, and desired outcome. TAW will steer toward a project brief and save the markdown artifact automatically.'
+          body: 'Brainstorm mode is active. Describe the idea, constraints, and desired outcome. TAW will help you explore first. Use /finalize when you want to save the markdown artifact.'
         }
       ]
     };

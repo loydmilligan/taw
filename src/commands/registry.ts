@@ -4,6 +4,8 @@ import { captureIdeaCommand } from './capture-idea.js';
 import { captureIssueCommand } from './capture-issue.js';
 import { configCommand } from './config.js';
 import { exitCommand } from './exit.js';
+import { exitModeCommand } from './exit-mode.js';
+import { finalizeCommand } from './finalize.js';
 import { createHelpCommand } from './help.js';
 import { ideasCommand } from './ideas.js';
 import { initCommand } from './init.js';
@@ -16,6 +18,8 @@ import type { CommandDefinition } from './types.js';
 const coreCommands: CommandDefinition[] = [
   brainstormCommand,
   workflowCommand,
+  finalizeCommand,
+  exitModeCommand,
   attachDirCommand,
   captureIdeaCommand,
   captureIssueCommand,

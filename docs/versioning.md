@@ -1,5 +1,7 @@
 # Versioning
 
+Applies to baseline `0.1.0-beta.2`.
+
 ## Scope
 
 TAW uses repository-level versioning for code and key documents.
@@ -37,4 +39,4 @@ For each release or beta cut:
 
 ## Current baseline
 
-- Current documented baseline: `0.1.0-beta.1`
+- Current documented baseline: `0.1.0-beta.2`
