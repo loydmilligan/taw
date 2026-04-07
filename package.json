@@ -1,0 +1,43 @@
+{
+  "name": "taw",
+  "version": "0.1.0",
+  "description": "Terminal AI Workspace",
+  "type": "module",
+  "bin": {
+    "taw": "./dist/cli/entry.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "dev": "tsx src/cli/entry.tsx",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/cli/entry.js",
+    "lint": "eslint .",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.59.0",
+    "ink": "^6.8.0",
+    "openai": "^6.3.0",
+    "react": "^19.2.0",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/node": "^24.6.0",
+    "@types/react": "^19.2.2",
+    "@typescript-eslint/eslint-plugin": "^8.46.1",
+    "@typescript-eslint/parser": "^8.46.1",
+    "eslint": "^9.37.0",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.6.2",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}
