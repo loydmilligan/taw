@@ -1,9 +1,11 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { createSession } from '../src/core/sessions/session-manager.js';
 import { finalizeCommand } from '../src/commands/finalize.js';
+import { addBrowserPayloadAsSource } from '../src/core/research/store.js';
+import { globalConfigSchema } from '../src/services/config/schema.js';
 import type { TranscriptEntry } from '../src/types/app.js';
 
 const originalHome = process.env.HOME;
@@ -51,11 +53,7 @@ describe('finalize command', () => {
         providerConfig: { provider: 'openrouter', model: 'openrouter/auto' },
         mode: 'Brainstorm',
         globalConfig: {
-          defaultProvider: 'openrouter',
-          defaultModel: 'openrouter/auto',
-          theme: {},
-          outputBehavior: { autoSaveNotes: true },
-          allowedContextDirs: [],
+          ...globalConfigSchema.parse({}),
           providers: { openrouter: {}, openai: {}, anthropic: {} }
         },
         projectConfig: null
@@ -104,11 +102,7 @@ describe('finalize command', () => {
         providerConfig: { provider: 'openrouter', model: 'openrouter/auto' },
         mode: 'Brainstorm',
         globalConfig: {
-          defaultProvider: 'openrouter',
-          defaultModel: 'openrouter/auto',
-          theme: {},
-          outputBehavior: { autoSaveNotes: true },
-          allowedContextDirs: [],
+          ...globalConfigSchema.parse({}),
           providers: { openrouter: {}, openai: {}, anthropic: {} }
         },
         projectConfig: null
@@ -150,11 +144,7 @@ describe('finalize command', () => {
         providerConfig: { provider: 'openrouter', model: 'openrouter/auto' },
         mode: 'Brainstorm',
         globalConfig: {
-          defaultProvider: 'openrouter',
-          defaultModel: 'openrouter/auto',
-          theme: {},
-          outputBehavior: { autoSaveNotes: true },
-          allowedContextDirs: [],
+          ...globalConfigSchema.parse({}),
           providers: { openrouter: {}, openai: {}, anthropic: {} }
         },
         projectConfig: null
@@ -164,5 +154,62 @@ describe('finalize command', () => {
     expect(result.mode).toBeUndefined();
     expect(session.metadata.artifacts).toHaveLength(0);
     expect(result.entries[0]?.title).toBe('No Draft Available');
+  });
+
+  it('includes research sources and session notes in finalized research artifacts', async () => {
+    tempDir = await mkdtemp(path.join(os.tmpdir(), 'taw-finalize-'));
+    process.env.HOME = tempDir;
+    const cwd = path.join(tempDir, 'project');
+    await mkdir(path.join(cwd, '.ai'), { recursive: true });
+    await writeFile(
+      path.join(cwd, '.ai', 'config.json'),
+      JSON.stringify({ projectName: 'project' })
+    );
+    const session = await createSession({ cwd });
+    await addBrowserPayloadAsSource(session, {
+      kind: 'article',
+      researchType: 'politics',
+      url: 'https://example.com/source',
+      title: 'Research Source',
+      selectedText: null,
+      pageTextExcerpt: 'source excerpt',
+      userNote: 'source note',
+      sentAt: new Date().toISOString(),
+      initialQuestion: null
+    });
+    await writeFile(session.notesPath, '# Session Notes\n\nImportant branch');
+
+    const result = await finalizeCommand.run(
+      { name: 'finalize', args: [], raw: '/finalize' },
+      {
+        cwd,
+        session,
+        transcript: [
+          {
+            id: 'a1',
+            kind: 'assistant',
+            title: 'Draft Response',
+            body: 'Latest research draft',
+            draftState: 'complete'
+          }
+        ],
+        providerConfig: { provider: 'openrouter', model: 'openrouter/auto' },
+        mode: 'Research Politics',
+        globalConfig: {
+          ...globalConfigSchema.parse({}),
+          providers: { openrouter: {}, openai: {}, anthropic: {} }
+        },
+        projectConfig: null
+      }
+    );
+
+    const artifactPath = session.metadata.artifacts[0]?.path;
+    expect(result.mode).toBe('General');
+    expect(artifactPath).toBeTruthy();
+    const artifact = await readFile(artifactPath!, 'utf8');
+    expect(artifact).toContain('# Research Politics Dossier');
+    expect(artifact).toContain('Latest research draft');
+    expect(artifact).toContain('Research Source');
+    expect(artifact).toContain('Important branch');
   });
 });

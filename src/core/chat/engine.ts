@@ -8,17 +8,27 @@ import {
   type TelemetryTurn
 } from '../telemetry/collector.js';
 import type { TranscriptEntry } from '../../types/app.js';
-import type { ChatMessage, ProviderConfig } from '../../types/provider.js';
-import type { ProjectConfig } from '../../services/config/schema.js';
+import type {
+  ChatMessage,
+  ChatToolCall,
+  ProviderConfig,
+  ProviderTool
+} from '../../types/provider.js';
+import type {
+  GlobalConfig,
+  ProjectConfig
+} from '../../services/config/schema.js';
 import type { SessionRecord } from '../../types/session.js';
 import { buildPromptContext } from '../context/prompt-context.js';
 import { createId } from '../../utils/ids.js';
+import { createToolRuntime } from '../tools/runtime.js';
 
 export interface ChatExecutionContext {
   transcript: TranscriptEntry[];
   latestUserInput: string;
   mode: string;
   providerConfig: ProviderConfig;
+  globalConfig: GlobalConfig;
   commandReference: string;
   session: SessionRecord;
   projectConfig: ProjectConfig | null;
@@ -32,7 +42,9 @@ export interface ChatExecutionResult {
   telemetryTurnId: string;
 }
 
-export async function executeChatTurn(context: ChatExecutionContext): Promise<ChatExecutionResult> {
+export async function executeChatTurn(
+  context: ChatExecutionContext
+): Promise<ChatExecutionResult> {
   const promptContext = await buildPromptContext(
     context.session,
     context.projectConfig,
@@ -46,6 +58,8 @@ export async function executeChatTurn(context: ChatExecutionContext): Promise<Ch
     promptContext
   );
   const adapter = getProviderAdapter(context.providerConfig);
+  const toolRuntime = createToolRuntime(context);
+  const hasLocalTools = toolRuntime.localToolNames.size > 0;
   const telemetryTurn: TelemetryTurn = {
     turnId: createId('turn'),
     requestGroupId: createId('request-group'),
@@ -55,8 +69,9 @@ export async function executeChatTurn(context: ChatExecutionContext): Promise<Ch
     latestUserInput: context.latestUserInput,
     promptContextLengthChars: promptContext.length,
     conversationDepth:
-      context.transcript.filter((entry) => entry.kind === 'user' || entry.kind === 'assistant')
-        .length + 1,
+      context.transcript.filter(
+        (entry) => entry.kind === 'user' || entry.kind === 'assistant'
+      ).length + 1,
     projectScoped: context.session.storageMode === 'project',
     attachedDirsCount: context.session.metadata.attachedDirs.length,
     userMessageLengthChars: context.latestUserInput.length,
@@ -68,24 +83,57 @@ export async function executeChatTurn(context: ChatExecutionContext): Promise<Ch
   };
 
   adapter.validateConfig(context.providerConfig);
-  await recordRequestStarted(context.session, telemetryTurn, context.providerConfig);
-  await appendConversationTurn(context.session, 'user', context.latestUserInput);
+  await recordRequestStarted(
+    context.session,
+    telemetryTurn,
+    context.providerConfig
+  );
+  await appendConversationTurn(
+    context.session,
+    'user',
+    context.latestUserInput
+  );
 
   let assistantText = '';
 
   try {
-    for await (const chunk of adapter.streamMessage(messages, context.providerConfig, {
-      signal: context.signal,
-      onStart: (info) => {
-        telemetryTurn.streamInfo = info;
-      },
-      onFinal: (info) => {
-        telemetryTurn.finalInfo = info;
-      }
-    })) {
-      assistantText += chunk;
+    if (hasLocalTools) {
+      assistantText = await executeToolAwareTurn(
+        messages,
+        adapter,
+        context.providerConfig,
+        toolRuntime.tools,
+        toolRuntime.localToolNames,
+        toolRuntime.executeToolCall,
+        context.signal,
+        (info) => {
+          telemetryTurn.streamInfo = info;
+        },
+        (info) => {
+          telemetryTurn.finalInfo = info;
+        }
+      );
       telemetryTurn.firstTokenAt ??= new Date().toISOString();
       context.onChunk(assistantText);
+    } else {
+      for await (const chunk of adapter.streamMessage(
+        messages,
+        context.providerConfig,
+        {
+          signal: context.signal,
+          tools: toolRuntime.tools,
+          onStart: (info) => {
+            telemetryTurn.streamInfo = info;
+          },
+          onFinal: (info) => {
+            telemetryTurn.finalInfo = info;
+          }
+        }
+      )) {
+        assistantText += chunk;
+        telemetryTurn.firstTokenAt ??= new Date().toISOString();
+        context.onChunk(assistantText);
+      }
     }
   } catch (error) {
     await recordRequestCompleted(
@@ -102,7 +150,8 @@ export async function executeChatTurn(context: ChatExecutionContext): Promise<Ch
       assistantText,
       interruptedByUser: context.signal?.aborted ?? false,
       errorKind: 'provider_error',
-      errorMessage: error instanceof Error ? error.message : 'Unknown provider error.',
+      errorMessage:
+        error instanceof Error ? error.message : 'Unknown provider error.',
       artifactGenerated: false,
       artifactPath: null
     });
@@ -136,6 +185,59 @@ export async function executeChatTurn(context: ChatExecutionContext): Promise<Ch
   };
 }
 
+async function executeToolAwareTurn(
+  initialMessages: ChatMessage[],
+  adapter: ReturnType<typeof getProviderAdapter>,
+  providerConfig: ProviderConfig,
+  tools: ProviderTool[],
+  localToolNames: Set<string>,
+  executeToolCall: (toolCall: ChatToolCall) => Promise<string>,
+  signal: AbortSignal | undefined,
+  onStart: (info: {
+    generationId?: string | null;
+    requestId?: string | null;
+    providerRequestId?: string | null;
+    modelResolved?: string | null;
+  }) => void,
+  onFinal: (info: { finishReason?: string | null }) => void
+): Promise<string> {
+  const messages = [...initialMessages];
+
+  for (let iteration = 0; iteration < 6; iteration += 1) {
+    const completion = await adapter.completeMessage(messages, providerConfig, {
+      signal,
+      tools,
+      onStart,
+      onFinal
+    });
+
+    const localToolCalls = completion.toolCalls.filter((toolCall) =>
+      localToolNames.has(toolCall.function.name)
+    );
+
+    if (localToolCalls.length === 0) {
+      return completion.text;
+    }
+
+    messages.push({
+      role: 'assistant',
+      content: completion.text,
+      toolCalls: completion.toolCalls
+    });
+
+    for (const toolCall of localToolCalls) {
+      const toolResult = await executeToolCall(toolCall);
+      messages.push({
+        role: 'tool',
+        toolCallId: toolCall.id,
+        content: toolResult
+      });
+    }
+  }
+
+  throw new Error('Tool loop exceeded maximum iterations.');
+}
+
 function buildChatMessages(
   transcript: TranscriptEntry[],
   latestUserInput: string,
@@ -153,7 +255,9 @@ function buildChatMessages(
   return [
     {
       role: 'system',
-      content: [buildModeSystemPrompt(mode, commandReference), promptContext].filter(Boolean).join('\n\n')
+      content: [buildModeSystemPrompt(mode, commandReference), promptContext]
+        .filter(Boolean)
+        .join('\n\n')
     },
     ...priorMessages,
     {

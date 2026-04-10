@@ -1,6 +1,6 @@
 # Tasks
 
-Applies to baseline `0.1.0-beta.2`.
+Applies to baseline `0.1.0-beta.3`.
 
 ## Milestone 0 - Bootstrap
 
@@ -119,9 +119,33 @@ Notes:
 
 - A formal playbook plus reusable `qa-fixtures/` data now exists so manual testing can be repeated without inventing scenarios.
 
+## Milestone 11 - Research and browser bridge
+
+- [x] Add `/research <politics|tech|repo|video>`
+- [x] Add research mode definitions and draft artifact flow
+- [x] Add session-local source storage and `/sources`
+- [x] Add browser bridge payload schema and CLI ingestion path
+- [x] Build browser extension MVP for sending page/selection context
+- [x] Add tmux side-pane source opening
+- [x] Add helper-service stack for SearXNG and bridge status controls
+- [x] Improve research `/finalize` to include the current draft, saved sources, and session notes
+- [x] Add source-pane usage hints and clear return-to-TAW guidance when opening sources
+- [x] Add `/source-note <index> <note>` for observations made while reading a source
+- [x] Add deterministic `/search-source <query>` for adding search results to `sources.json`
+- [x] Add `/rate-source <index|url>` using a static SourceInfo-derived SQLite database as a first pass
+- [x] Add cost warnings for high-turn and high-session spend
+- [ ] Add persistent interest and watchlist memory files
+- [ ] Add explicit memory commands for interests, ideas, and repos
+- [ ] Add manual QA coverage for browser-to-terminal workflows
+- [ ] Track open source views as named tmux windows or managed panes, and jump to existing views instead of duplicating them
+- [ ] Add richer research `/finalize` synthesis across the full transcript, not only the latest draft plus stored notes
+- [ ] Add optional rating annotations directly to `/sources`
+- [ ] Add high-token warnings alongside the implemented dollar-cost warnings
+- [ ] Add adaptive model policy controls for budget-sensitive model selection
+- [ ] Add end-of-session model rating capture so model recommendations can learn user preferences
+
 ## Deferred
 
-- [ ] browser capture implementation
 - [ ] heavy RAG across many file types
 - [ ] task management system
 - [ ] kanban

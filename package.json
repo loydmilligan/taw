@@ -1,10 +1,12 @@
 {
   "name": "taw",
-  "version": "0.1.0-beta.2",
+  "version": "0.1.0-beta.3",
   "description": "Terminal AI Workspace",
   "type": "module",
   "bin": {
-    "taw": "./dist/cli/entry.js"
+    "taw": "./dist/cli/entry.js",
+    "taw-bridge": "./dist/cli/bridge.js",
+    "taw-research-harness": "./dist/cli/research-harness.js"
   },
   "engines": {
     "node": ">=20"
@@ -12,6 +14,11 @@
   "packageManager": "pnpm@10.33.0",
   "scripts": {
     "dev": "tsx src/cli/entry.tsx",
+    "bridge:dev": "tsx src/cli/bridge.ts",
+    "research:harness": "tsx src/cli/research-harness.ts",
+    "searxng:up": "docker compose -f infra/docker-compose.yml up -d searxng",
+    "searxng:down": "docker compose -f infra/docker-compose.yml stop searxng",
+    "searxng:status": "docker compose -f infra/docker-compose.yml ps",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/cli/entry.js",
     "lint": "eslint .",

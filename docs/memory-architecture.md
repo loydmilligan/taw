@@ -123,3 +123,7 @@ Still not implemented:
 - prior-session recall beyond what is manually captured in `USER.md` and `MEMORY.md`
 - embeddings or vector retrieval
 - automatic memory curation workflows
+
+## Next planned extension
+
+Research-mode memory will need an additional structured layer beyond the current assistant-file summaries. The planned direction is documented in [docs/memory-model-spec.md](memory-model-spec.md), with related workflow specs in [docs/research-mode-spec.md](research-mode-spec.md) and [docs/browser-bridge-spec.md](browser-bridge-spec.md).

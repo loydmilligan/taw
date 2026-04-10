@@ -10,6 +10,18 @@ export const sessionUsageCommand: CommandDefinition = {
   async run(_input, context) {
     const summaries = await readTelemetrySummaries(context.session);
     const usage = summarizeSessionUsage(summaries);
+    const last = summaries.at(-1);
+    const warnings = [
+      last?.total_cost != null &&
+      context.globalConfig.budget.highTurnCostWarning > 0 &&
+      last.total_cost >= context.globalConfig.budget.highTurnCostWarning
+        ? `High last-turn cost: $${last.total_cost.toFixed(6)}`
+        : null,
+      context.globalConfig.budget.highSessionCostWarning > 0 &&
+      usage.totalCost >= context.globalConfig.budget.highSessionCostWarning
+        ? `High session cost: $${usage.totalCost.toFixed(6)}`
+        : null
+    ].filter(Boolean);
 
     return {
       entries: [
@@ -25,7 +37,8 @@ export const sessionUsageCommand: CommandDefinition = {
             `Reasoning Tokens: ${usage.reasoningTokens}`,
             `Cached Tokens: ${usage.cachedTokens}`,
             `Average Latency: ${usage.averageLatencyMs ?? 'n/a'} ms`,
-            `Artifacts Generated: ${usage.artifactsGenerated}`
+            `Artifacts Generated: ${usage.artifactsGenerated}`,
+            warnings.length > 0 ? `Warnings:\n${warnings.join('\n')}` : ''
           ].join('\n')
         }
       ]

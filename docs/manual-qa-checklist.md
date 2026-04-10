@@ -1,6 +1,6 @@
 # Manual QA Playbook
 
-Applies to baseline `0.1.0-beta.2`.
+Applies to baseline `0.1.0-beta.3`.
 
 ## Goal
 
@@ -24,14 +24,14 @@ corepack pnpm test
 
 Use only the supplied fixtures:
 
-- [qa-fixtures/non-project-workspace](/home/loydmilligan/Projects/taw/qa-fixtures/non-project-workspace)
-- [qa-fixtures/project-workspace](/home/loydmilligan/Projects/taw/qa-fixtures/project-workspace)
-- [qa-fixtures/context-dirs](/home/loydmilligan/Projects/taw/qa-fixtures/context-dirs)
-- [qa-fixtures/prompts](/home/loydmilligan/Projects/taw/qa-fixtures/prompts)
+- [qa-fixtures/non-project-workspace](../qa-fixtures/non-project-workspace)
+- [qa-fixtures/project-workspace](../qa-fixtures/project-workspace)
+- [qa-fixtures/context-dirs](../qa-fixtures/context-dirs)
+- [qa-fixtures/prompts](../qa-fixtures/prompts)
 
 Read the fixture index first:
 
-- [qa-fixtures/README.md](/home/loydmilligan/Projects/taw/qa-fixtures/README.md)
+- [qa-fixtures/README.md](../qa-fixtures/README.md)
 
 ## Reset before a fresh run
 
@@ -51,7 +51,7 @@ Run two passes when possible:
 
 ### QA-01 General-mode launch in a non-project workspace
 
-1. Change into [qa-fixtures/non-project-workspace](/home/loydmilligan/Projects/taw/qa-fixtures/non-project-workspace).
+1. Change into [qa-fixtures/non-project-workspace](../qa-fixtures/non-project-workspace).
 2. Run `corepack pnpm dev`.
 3. Confirm the header shows `Mode General`.
 4. Confirm storage is general mode, not project mode.
@@ -79,9 +79,9 @@ Expected result:
 
 ### QA-03 Provider error handling
 
-1. Stay in [qa-fixtures/non-project-workspace](/home/loydmilligan/Projects/taw/qa-fixtures/non-project-workspace).
+1. Stay in [qa-fixtures/non-project-workspace](../qa-fixtures/non-project-workspace).
 2. Ensure the relevant provider key is not set.
-3. Paste the content from [general-chat-message.md](/home/loydmilligan/Projects/taw/qa-fixtures/prompts/general-chat-message.md).
+3. Paste the content from [general-chat-message.md](../qa-fixtures/prompts/general-chat-message.md).
 4. Confirm the app shows a provider error with a clear next step.
 5. Confirm the app returns to `Phase idle`.
 
@@ -93,7 +93,7 @@ Expected result:
 
 ### QA-04 Project initialization flow
 
-1. In [qa-fixtures/non-project-workspace](/home/loydmilligan/Projects/taw/qa-fixtures/non-project-workspace), run `/init`.
+1. In [qa-fixtures/non-project-workspace](../qa-fixtures/non-project-workspace), run `/init`.
 2. Confirm `.ai/config.json`, `.ai/sessions/`, and these assistant files are created under `.ai/assistant/`:
    `AGENTS.md`, `SOUL.md`, `USER.md`, `USER.summary.md`, `MEMORY.md`, `MEMORY.summary.md`, and `COMMANDS.md`.
 3. Exit the app.
@@ -107,7 +107,7 @@ Expected result:
 
 ### QA-05 Attach-dir flow with valid and invalid paths
 
-1. Change into [qa-fixtures/project-workspace](/home/loydmilligan/Projects/taw/qa-fixtures/project-workspace).
+1. Change into [qa-fixtures/project-workspace](../qa-fixtures/project-workspace).
 2. Launch `corepack pnpm dev`.
 3. Run `/attach-dir ../context-dirs/brainstorm-context`.
 4. Confirm `/status` lists that attached directory.
@@ -121,10 +121,10 @@ Expected result:
 
 ### QA-06 Brainstorm draft and finalize flow
 
-1. In [qa-fixtures/project-workspace](/home/loydmilligan/Projects/taw/qa-fixtures/project-workspace), run `/brainstorm`.
+1. In [qa-fixtures/project-workspace](../qa-fixtures/project-workspace), run `/brainstorm`.
 2. Confirm the header shows `Mode Brainstorm` and `Phase idle`.
 3. Optionally attach `../context-dirs/brainstorm-context`.
-4. Paste the content from [brainstorm-message.md](/home/loydmilligan/Projects/taw/qa-fixtures/prompts/brainstorm-message.md).
+4. Paste the content from [brainstorm-message.md](../qa-fixtures/prompts/brainstorm-message.md).
 5. Confirm the assistant response appears as `Draft Response`.
 6. Confirm the header reaches `Phase draft-ready`.
 7. Run `/finalize`.
@@ -154,7 +154,7 @@ Expected result:
 
 1. Run `/workflow review`.
 2. Optionally attach `../context-dirs/workflow-review-context`.
-3. Paste the content from [workflow-review-message.md](/home/loydmilligan/Projects/taw/qa-fixtures/prompts/workflow-review-message.md).
+3. Paste the content from [workflow-review-message.md](../qa-fixtures/prompts/workflow-review-message.md).
 4. Confirm the response is clearly treated as a draft.
 5. Run `/finalize`.
 6. Confirm a workflow review artifact is created.
@@ -168,7 +168,7 @@ Expected result:
 
 1. Run `/workflow generate`.
 2. Optionally attach `../context-dirs/workflow-generate-context`.
-3. Paste the content from [workflow-generate-message.md](/home/loydmilligan/Projects/taw/qa-fixtures/prompts/workflow-generate-message.md).
+3. Paste the content from [workflow-generate-message.md](../qa-fixtures/prompts/workflow-generate-message.md).
 4. Confirm the response is a draft.
 5. Run `/finalize`.
 6. Confirm a workflow-generate artifact is created.

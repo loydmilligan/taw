@@ -25,15 +25,31 @@ export function Footer({
         : 'Type a message, run /init to make this directory project-aware, or use /help for commands.';
 
   const lastRequest = state.usage.lastRequest;
+  const lastCost = lastRequest?.total_cost ?? null;
+  const highTurnCost =
+    lastCost !== null &&
+    state.globalConfig.budget.highTurnCostWarning > 0 &&
+    lastCost >= state.globalConfig.budget.highTurnCostWarning;
+  const highSessionCost =
+    state.globalConfig.budget.highSessionCostWarning > 0 &&
+    state.usage.session.totalCost >=
+      state.globalConfig.budget.highSessionCostWarning;
 
   return (
     <Box flexDirection="column" marginTop={1}>
       <Text color={theme.accent}>{nextAction}</Text>
+      {highTurnCost || highSessionCost ? (
+        <Text color={theme.warning}>
+          Cost warning:{' '}
+          {highTurnCost
+            ? `last turn $${formatCost(lastCost)}`
+            : `session $${state.usage.session.totalCost.toFixed(6)}`}
+        </Text>
+      ) : null}
       <Text color={theme.muted}>WD {workingDirectory}</Text>
       <Text color={theme.muted}>
-        Last: ${formatCost(lastRequest?.total_cost ?? null)} prompt{' '}
-        {lastRequest?.prompt_tokens ?? 0} completion{' '}
-        {lastRequest?.completion_tokens ?? 0} reasoning{' '}
+        Last: ${formatCost(lastCost)} prompt {lastRequest?.prompt_tokens ?? 0}{' '}
+        completion {lastRequest?.completion_tokens ?? 0} reasoning{' '}
         {lastRequest?.reasoning_tokens ?? 0}
       </Text>
       <Text color={theme.muted}>

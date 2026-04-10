@@ -1,0 +1,108 @@
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+import { researchSourceSchema } from './schema.js';
+import type { BrowserResearchPayload, ResearchSource } from './types.js';
+import type { SessionRecord } from '../../types/session.js';
+import { createId } from '../../utils/ids.js';
+
+export async function readResearchSources(
+  session: SessionRecord
+): Promise<ResearchSource[]> {
+  try {
+    const content = await readFile(session.sourcesJsonPath, 'utf8');
+    const parsed = JSON.parse(content) as unknown[];
+    return parsed.map((item) => researchSourceSchema.parse(item));
+  } catch {
+    return [];
+  }
+}
+
+export async function writeResearchSources(
+  session: SessionRecord,
+  sources: ResearchSource[]
+): Promise<void> {
+  await writeFile(
+    session.sourcesJsonPath,
+    `${JSON.stringify(sources, null, 2)}\n`,
+    'utf8'
+  );
+}
+
+export async function appendResearchSource(
+  session: SessionRecord,
+  source: ResearchSource
+): Promise<ResearchSource[]> {
+  const existing = await readResearchSources(session);
+  const next = [...existing, source];
+  await writeResearchSources(session, next);
+  return next;
+}
+
+export async function addBrowserPayloadAsSource(
+  session: SessionRecord,
+  payload: BrowserResearchPayload
+): Promise<ResearchSource> {
+  const snapshotPath = payload.pageTextExcerpt
+    ? await writeSourceSnapshot(session, payload.title, payload.pageTextExcerpt)
+    : null;
+
+  const source: ResearchSource = {
+    id: createId('source'),
+    researchType: payload.researchType,
+    kind: payload.kind,
+    url: payload.url,
+    title: payload.title,
+    origin: 'browser-extension',
+    selectedText: payload.selectedText,
+    excerpt: payload.pageTextExcerpt,
+    note: payload.userNote,
+    snapshotPath,
+    createdAt: payload.sentAt,
+    status: 'new'
+  };
+
+  await appendResearchSource(session, source);
+  return source;
+}
+
+export async function updateResearchSource(
+  session: SessionRecord,
+  index: number,
+  update: Partial<Pick<ResearchSource, 'note' | 'status'>>
+): Promise<ResearchSource | null> {
+  const sources = await readResearchSources(session);
+  const existing = sources[index - 1];
+
+  if (!existing) {
+    return null;
+  }
+
+  const next: ResearchSource = {
+    ...existing,
+    ...update
+  };
+  sources[index - 1] = next;
+  await writeResearchSources(session, sources);
+  return next;
+}
+
+async function writeSourceSnapshot(
+  session: SessionRecord,
+  title: string,
+  content: string
+): Promise<string> {
+  await mkdir(session.sourcesDir, { recursive: true });
+  const fileName = `${sanitizeFileName(title)}.txt`;
+  const fullPath = path.join(session.sourcesDir, `${Date.now()}-${fileName}`);
+  await writeFile(fullPath, `${content.trim()}\n`, 'utf8');
+  return fullPath;
+}
+
+function sanitizeFileName(value: string): string {
+  return (
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'source'
+  );
+}

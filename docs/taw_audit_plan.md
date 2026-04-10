@@ -1,6 +1,6 @@
 # TAW Audit And Improvement Plan
 
-Applies to baseline `0.1.0-beta.2`.
+Applies to baseline `0.1.0-beta.3`.
 
 ## Summary
 

@@ -1,10 +1,12 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type {
   ChatMessage,
+  ProviderCompletionResult,
   ProviderAdapter,
   ProviderConfig,
   ProviderStreamFinalInfo,
-  ProviderStreamStartInfo
+  ProviderStreamStartInfo,
+  ProviderTool
 } from '../../types/provider.js';
 
 export class AnthropicProvider implements ProviderAdapter {
@@ -22,6 +24,7 @@ export class AnthropicProvider implements ProviderAdapter {
       signal?: AbortSignal;
       onStart?: (info: ProviderStreamStartInfo) => void;
       onFinal?: (info: ProviderStreamFinalInfo) => void;
+      tools?: ProviderTool[];
     }
   ): AsyncGenerator<string, void, void> {
     this.validateConfig(config);
@@ -65,6 +68,22 @@ export class AnthropicProvider implements ProviderAdapter {
     const finalText = await stream.finalText();
     options?.onFinal?.({});
     yield finalText;
+  }
+
+  async completeMessage(
+    messages: ChatMessage[],
+    config: ProviderConfig,
+    options?: {
+      signal?: AbortSignal;
+      onStart?: (info: ProviderStreamStartInfo) => void;
+      onFinal?: (info: ProviderStreamFinalInfo) => void;
+      tools?: ProviderTool[];
+    }
+  ): Promise<ProviderCompletionResult> {
+    return {
+      text: await collectStream(this.streamMessage(messages, config, options)),
+      toolCalls: []
+    };
   }
 
   validateConfig(config: ProviderConfig): void {

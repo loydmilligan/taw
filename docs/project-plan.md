@@ -1,6 +1,6 @@
 # Project Plan
 
-Applies to baseline `0.1.0-beta.2`.
+Applies to baseline `0.1.0-beta.3`.
 
 ## Roadmap status
 
@@ -98,7 +98,6 @@ Status: partial
 Delivered:
 
 - changelog and versioning policy
-- known limitations tracking
 - roadmap/task refresh tied to shipped behavior
 - reusable manual QA data for regression checks
 
@@ -107,12 +106,57 @@ Remaining:
 - execute the full manual playbook with live provider credentials
 - tag the next beta after the full release checklist is clean
 
+### Phase 7 - Research and browser bridge
+
+Status: in progress
+
+Target outcomes:
+
+- typed `/research` modes for politics, tech, repo, and video
+- browser extension handoff into TAW sessions
+- source tracking separate from transcript content
+- tmux-assisted side-pane source viewing
+- helper-service stack for on-demand search backends like SearXNG
+- persistent interest and watchlist memory for research flows
+
+Delivered MVP:
+
+- typed `/research` modes, browser payload ingestion, and a local bridge
+- Chromium extension MVP for sending page or selected text into a new research session
+- session-local `sources.json` plus `/sources`
+- `/open-source <index>` tmux side panes with terminal-browser fallback hints
+- `/source-note <index> <note>` for explicit source observations
+- `/search-source <query>` backed by the configured SearXNG search backend
+- `/rate-source <index|url>` backed by a local SourceInfo-derived `sources.db`
+- research `/finalize` dossier output with latest draft, saved sources, and notes
+- high-cost warning display in the footer and `/session-usage`
+- tmux research harness with automatic cleanup by default
+
+Near-term roadmap:
+
+- add clearer research-mode affordances for what the user can do next in each
+  state, especially after opening source panes
+- add source workspace management, likely via named tmux windows rather than
+  disposable side panes: list open source views, jump back to an existing source,
+  and avoid duplicate panes/windows for the same source
+- add optional source rating annotations to `/sources`
+- add high-token warnings and context-size hints when source-heavy research
+  starts to get expensive
+- add adaptive model policy options: use cheaper models after recent spend
+  crosses a configured threshold, and allow explicit user override when quality
+  matters more than cost
+- add lightweight model feedback at session end, such as quick rating of the
+  model used, so TAW can eventually recommend favorite models by task type and
+  cost/quality tradeoff
+
 ## Current release goals
 
 - keep structured-mode drafts reliable
 - keep project/general state obvious
 - preserve session data and artifact paths
 - make manual verification repeatable for another person
+- harden the implemented research/browser/source-rating MVP before adding
+  adaptive model routing or durable research memory
 
 ## Release checklist
 

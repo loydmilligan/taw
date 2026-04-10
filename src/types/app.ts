@@ -24,4 +24,5 @@ export interface AppState {
   session: SessionRecord;
   transcript: TranscriptEntry[];
   usage: UsageSnapshot;
+  queuedInputs: string[];
 }

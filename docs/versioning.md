@@ -1,6 +1,6 @@
 # Versioning
 
-Applies to baseline `0.1.0-beta.2`.
+Applies to baseline `0.1.0-beta.3`.
 
 ## Scope
 
@@ -39,4 +39,4 @@ For each release or beta cut:
 
 ## Current baseline
 
-- Current documented baseline: `0.1.0-beta.2`
+- Current documented baseline: `0.1.0-beta.3`

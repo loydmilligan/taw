@@ -1,6 +1,6 @@
 # Testing Strategy
 
-Applies to baseline `0.1.0-beta.2`.
+Applies to baseline `0.1.0-beta.3`.
 
 ## Testing philosophy
 
@@ -22,9 +22,9 @@ Manual testing is the primary source of confidence for:
 - structured-mode draft/finalize flow
 - artifact quality
 
-Use the formal playbook in [docs/manual-qa-checklist.md](/home/loydmilligan/Projects/taw/docs/manual-qa-checklist.md).
+Use the formal playbook in [docs/manual-qa-checklist.md](manual-qa-checklist.md).
 
-Use the ready-made fixtures in [qa-fixtures/README.md](/home/loydmilligan/Projects/taw/qa-fixtures/README.md) instead of inventing ad hoc test projects.
+Use the ready-made fixtures in [qa-fixtures/README.md](../qa-fixtures/README.md) instead of inventing ad hoc test projects.
 
 ## Automated testing
 

@@ -4,6 +4,34 @@ All notable changes to this project should be documented in this file.
 
 The format is based on Keep a Changelog and the project uses Semantic Versioning for release tags.
 
+## [0.1.0-beta.3] - 2026-04-10
+
+### Added
+
+- Research modes for politics, tech, repo, and video with session-local source tracking.
+- Local browser bridge, Chromium extension MVP, and tmux-based research harness.
+- SearXNG helper-service controls and research `search_web` integration with optional OpenRouter hosted-search fallback.
+- `/sources`, `/open-source`, `/source-note`, `/search-source`, and `/rate-source` commands for research workflows.
+- Research `/finalize` dossier output that includes the latest draft, saved sources, and session notes.
+- Budget warning configuration and high-cost notices in the footer and `/session-usage`.
+
+### Changed
+
+- Browser and research documentation now reflects the implemented MVP instead of pre-implementation plans.
+- Removed copied OpenRouter reference snapshots and old brainstorm test-session captures from active project docs.
+- Bumped the documented release baseline to `0.1.0-beta.3`.
+
+### Fixed
+
+- Research harness tmux sessions now clean up automatically unless `--keep-session` is used.
+- Browser bridge tmux windows are named from the captured article title.
+- Text input Backspace now behaves like backward delete after the arrow-key handling fix.
+- SourceInfo-derived source rating setup now uses a rebuilt local `sources.db` at `~/.config/taw/sources.db`.
+
+### Notes
+
+- `/rate-source` currently uses Node's experimental `node:sqlite` module. It works on the local Node 22 runtime used for verification; older Node 20 installs may need a future fallback.
+
 ## [0.1.0-beta.2] - 2026-04-07
 
 ### Added

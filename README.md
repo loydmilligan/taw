@@ -2,7 +2,7 @@
 
 TAW is a terminal-native, chat-first AI workspace for planning, brainstorming, workflow design, workflow review, and markdown artifact generation. It is intentionally not a coding agent.
 
-Current baseline: `0.1.0-beta.2`
+Current baseline: `0.1.0-beta.3`
 
 Structured modes now use a draft-first workflow:
 
@@ -19,6 +19,8 @@ Structured modes now use a draft-first workflow:
   - `OPENROUTER_API_KEY` for the default OpenRouter path
   - `OPENAI_API_KEY` for OpenAI-compatible mode
   - `ANTHROPIC_API_KEY` for Anthropic mode
+- Node 22+ is recommended for `/rate-source`, which currently uses Node's
+  experimental `node:sqlite` module.
 
 ## Quick start
 
@@ -30,12 +32,46 @@ corepack pnpm dev
 
 The default provider is OpenRouter. Launching TAW from any directory starts a session immediately. If the current directory contains `.ai/config.json`, sessions are saved under `.ai/sessions/`. Otherwise they are saved under `~/.config/taw/sessions/`.
 
+You can also seed a research session from a browser bridge payload:
+
+```bash
+corepack pnpm dev -- --research-from-browser /path/to/payload.json
+```
+
+Run the localhost browser bridge with:
+
+```bash
+corepack pnpm bridge:dev
+```
+
+The bridge listens on `127.0.0.1:4317` by default and creates an auth token at `~/.config/taw/bridge-token`.
+
+TAW includes an optional helper-service stack under [infra/docker-compose.yml](infra/docker-compose.yml). The first service is SearXNG, which can be started on demand from the browser extension popup or directly with:
+
+```bash
+corepack pnpm searxng:up
+corepack pnpm searxng:status
+corepack pnpm searxng:down
+```
+
+The browser popup shows current SearXNG status, lets you start or stop it manually, and can keep it warm by resetting the idle shutdown timer. Idle shutdown is configurable from TAW with `/config search idle-minutes <n>`.
+
+In research modes, TAW can now use a local `search_web` tool backed by SearXNG during a chat turn. On OpenRouter, `openrouter:datetime` is enabled by default for current-date awareness, and hosted web search can be enabled as a fallback with `/config search hosted-fallback on`.
+
+A minimal Chromium extension MVP lives in [browser-extension/README.md](browser-extension/README.md).
+
 ## Commands
 
 - `/brainstorm`
+- `/research <politics|tech|repo|video>`
 - `/workflow <generate|review>`
 - `/finalize`
 - `/exit-mode`
+- `/sources`
+- `/open-source <index>`
+- `/source-note <index> <note>`
+- `/search-source <query>`
+- `/rate-source <index|url>`
 - `/attach-dir <path>`
 - `/capture-idea <summary> [note]`
 - `/capture-issue <summary> [note]`
@@ -43,6 +79,7 @@ The default provider is OpenRouter. Launching TAW from any directory starts a se
 - `/issues`
 - `/session-usage`
 - `/config`
+- `/config search`
 - `/init`
 - `/summarize-session`
 - `/help`
@@ -76,6 +113,8 @@ Use these files as follows:
 
 TAW injects `AGENTS.md`, `SOUL.md`, and the generated `USER` and `MEMORY` summaries on every turn. It also retrieves matching raw sections from `USER.md` and `MEMORY.md` when the current message overlaps with them.
 
+`SOUL.md` is only a voice file. The assistant should identify itself as `TAW` or `TAWd`, not `SOUL`.
+
 Global config example:
 
 ```json
@@ -92,6 +131,21 @@ Global config example:
 }
 ```
 
+Useful search config examples:
+
+```text
+/config search show
+/config search idle-minutes 45
+/config search hosted-fallback on
+/config search hosted-fallback-max-results 5
+/config budget show
+/config budget high-turn 0.05
+/config budget high-session 0.25
+```
+
+Source rating data is read from `~/.config/taw/sources.db` by default. You can
+set another path with `sourceRatings.dbPath` in `~/.config/taw/config.json`.
+
 ## Scripts
 
 - `corepack pnpm dev`
@@ -106,10 +160,16 @@ Global config example:
 
 ## QA
 
-Manual QA steps and ready-made fixtures live in [docs/manual-qa-checklist.md](/home/loydmilligan/Projects/taw/docs/manual-qa-checklist.md) and [qa-fixtures/README.md](/home/loydmilligan/Projects/taw/qa-fixtures/README.md).
+Manual QA steps and ready-made fixtures live in [docs/manual-qa-checklist.md](docs/manual-qa-checklist.md) and [qa-fixtures/README.md](qa-fixtures/README.md).
 
-Memory design notes live in [docs/memory-architecture.md](/home/loydmilligan/Projects/taw/docs/memory-architecture.md).
+A repeatable tmux-based research harness lives in [docs/research-harness.md](docs/research-harness.md) and can be run with `corepack pnpm research:harness`.
 
-Versioning policy lives in [docs/versioning.md](/home/loydmilligan/Projects/taw/docs/versioning.md). Release history lives in [CHANGELOG.md](/home/loydmilligan/Projects/taw/CHANGELOG.md).
+Memory design notes live in [docs/memory-architecture.md](docs/memory-architecture.md).
 
-Telemetry details live in [docs/ai-telemetry.md](/home/loydmilligan/Projects/taw/docs/ai-telemetry.md).
+Research and browser handoff docs live in [docs/research-mode-spec.md](docs/research-mode-spec.md), [docs/browser-bridge-spec.md](docs/browser-bridge-spec.md), and [docs/memory-model-spec.md](docs/memory-model-spec.md).
+
+Versioning policy lives in [docs/versioning.md](docs/versioning.md). Release history lives in [CHANGELOG.md](CHANGELOG.md).
+
+Telemetry details live in [docs/ai-telemetry.md](docs/ai-telemetry.md).
+
+Current release caveats live in [KNOWN_LIMITATIONS.md](KNOWN_LIMITATIONS.md).

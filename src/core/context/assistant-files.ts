@@ -2,7 +2,10 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import type { CommandDefinition } from '../../commands/types.js';
 import type { SessionRecord } from '../../types/session.js';
-import { getGlobalAssistantDir, getProjectAssistantDir } from '../../services/filesystem/paths.js';
+import {
+  getGlobalAssistantDir,
+  getProjectAssistantDir
+} from '../../services/filesystem/paths.js';
 
 const DEFAULT_AGENTS = `# AGENTS
 
@@ -15,6 +18,10 @@ TAW is a terminal-native AI workspace for planning, research, workflow design, w
 `;
 
 const DEFAULT_SOUL = `# SOUL
+
+This file defines assistant voice only. It is not the assistant's name.
+
+The assistant should refer to itself as TAW or TAWd if a name is needed.
 
 You are sharp, calm, structured, and practical.
 
@@ -61,7 +68,10 @@ export async function ensureProjectAssistantReferenceFiles(
   cwd: string,
   commands: CommandDefinition[]
 ): Promise<void> {
-  await ensureAssistantFilesAtDir(getProjectAssistantDir(cwd), renderCommandsMarkdown(commands));
+  await ensureAssistantFilesAtDir(
+    getProjectAssistantDir(cwd),
+    renderCommandsMarkdown(commands)
+  );
 }
 
 export async function loadCommandReference(
@@ -83,7 +93,9 @@ export async function loadCommandReference(
 }
 
 export function renderCommandsMarkdown(commands: CommandDefinition[]): string {
-  const lines = commands.map((command) => `- \`${command.usage}\` — ${command.description}`);
+  const lines = commands.map(
+    (command) => `- \`${command.usage}\` — ${command.description}`
+  );
 
   return ['# Available Slash Commands', '', ...lines, ''].join('\n');
 }
@@ -114,7 +126,9 @@ export async function loadAssistantPromptMaterials(
   const projectUser = projectDir
     ? await readOptionalFile(path.join(projectDir, 'USER.md'))
     : null;
-  const globalMemory = await readOptionalFile(path.join(globalDir, 'MEMORY.md'));
+  const globalMemory = await readOptionalFile(
+    path.join(globalDir, 'MEMORY.md')
+  );
   const projectMemory = projectDir
     ? await readOptionalFile(path.join(projectDir, 'MEMORY.md'))
     : null;
@@ -128,11 +142,15 @@ export async function loadAssistantPromptMaterials(
     projectSoul: projectDir
       ? await readOptionalFile(path.join(projectDir, 'SOUL.md'))
       : null,
-    globalUserSummary: await readOptionalFile(path.join(globalDir, 'USER.summary.md')),
+    globalUserSummary: await readOptionalFile(
+      path.join(globalDir, 'USER.summary.md')
+    ),
     projectUserSummary: projectDir
       ? await readOptionalFile(path.join(projectDir, 'USER.summary.md'))
       : null,
-    globalMemorySummary: await readOptionalFile(path.join(globalDir, 'MEMORY.summary.md')),
+    globalMemorySummary: await readOptionalFile(
+      path.join(globalDir, 'MEMORY.summary.md')
+    ),
     projectMemorySummary: projectDir
       ? await readOptionalFile(path.join(projectDir, 'MEMORY.summary.md'))
       : null,
@@ -147,7 +165,10 @@ export async function loadAssistantPromptMaterials(
   };
 }
 
-async function ensureAssistantFilesAtDir(dir: string, commandsMarkdown: string): Promise<void> {
+async function ensureAssistantFilesAtDir(
+  dir: string,
+  commandsMarkdown: string
+): Promise<void> {
   await mkdir(dir, { recursive: true });
 
   await writeIfMissing(path.join(dir, 'AGENTS.md'), DEFAULT_AGENTS);
@@ -156,7 +177,8 @@ async function ensureAssistantFilesAtDir(dir: string, commandsMarkdown: string):
   await writeIfMissing(path.join(dir, 'MEMORY.md'), DEFAULT_MEMORY);
   await writeFile(path.join(dir, 'COMMANDS.md'), commandsMarkdown, 'utf8');
 
-  const userRaw = (await readOptionalFile(path.join(dir, 'USER.md'))) ?? DEFAULT_USER;
+  const userRaw =
+    (await readOptionalFile(path.join(dir, 'USER.md'))) ?? DEFAULT_USER;
   const memoryRaw =
     (await readOptionalFile(path.join(dir, 'MEMORY.md'))) ?? DEFAULT_MEMORY;
 
@@ -172,7 +194,10 @@ async function ensureAssistantFilesAtDir(dir: string, commandsMarkdown: string):
   );
 }
 
-async function writeIfMissing(filePath: string, content: string): Promise<void> {
+async function writeIfMissing(
+  filePath: string,
+  content: string
+): Promise<void> {
   try {
     await readFile(filePath, 'utf8');
   } catch {
@@ -194,12 +219,18 @@ function buildSummaryMarkdown(title: string, content: string): string {
     .filter(Boolean)
     .slice(0, 6);
 
-  return [`# ${title}`, '', ...(sections.length > 0 ? sections : ['- No summary content yet.']), ''].join(
-    '\n'
-  );
+  return [
+    `# ${title}`,
+    '',
+    ...(sections.length > 0 ? sections : ['- No summary content yet.']),
+    ''
+  ].join('\n');
 }
 
-function retrieveRelevantSections(content: string | null, query: string): string[] {
+function retrieveRelevantSections(
+  content: string | null,
+  query: string
+): string[] {
   if (!content) {
     return [];
   }
@@ -268,7 +299,8 @@ function summarizeSection(section: string): string | null {
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
 
-  const heading = lines.find((line) => /^##\s+/.test(line))?.replace(/^##\s+/, '') ?? null;
+  const heading =
+    lines.find((line) => /^##\s+/.test(line))?.replace(/^##\s+/, '') ?? null;
   const bullets = lines
     .filter((line) => !line.startsWith('#'))
     .slice(0, 3)
@@ -278,5 +310,7 @@ function summarizeSection(section: string): string | null {
     return null;
   }
 
-  return [heading ? `## ${heading}` : null, ...bullets].filter(Boolean).join('\n');
+  return [heading ? `## ${heading}` : null, ...bullets]
+    .filter(Boolean)
+    .join('\n');
 }

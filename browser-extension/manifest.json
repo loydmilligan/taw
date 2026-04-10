@@ -1,0 +1,12 @@
+{
+  "manifest_version": 3,
+  "name": "TAW Browser Bridge",
+  "version": "0.1.0",
+  "description": "Send the current page or selected text into Terminal AI Workspace research sessions.",
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": ["http://127.0.0.1/*"],
+  "icons": {}
+}

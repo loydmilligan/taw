@@ -8,6 +8,7 @@ import {
 } from './schema.js';
 import { getAppConfigDir, getProjectConfigPath } from '../filesystem/paths.js';
 import type { ProviderConfig } from '../../types/provider.js';
+import { loadTawEnvFiles } from './env.js';
 
 export interface LoadedConfig {
   globalConfig: GlobalConfig;
@@ -16,6 +17,7 @@ export interface LoadedConfig {
 }
 
 export async function loadConfig(cwd: string): Promise<LoadedConfig> {
+  await loadTawEnvFiles(cwd);
   const globalConfig = await loadGlobalConfig();
   const projectConfig = await loadProjectConfig(cwd);
 

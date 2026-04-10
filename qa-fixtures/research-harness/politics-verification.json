@@ -1,0 +1,18 @@
+{
+  "name": "politics-verification",
+  "description": "Push research mode to verify a sensational article rather than just summarizing or planning.",
+  "initialUserMessage": "/research politics I want to verify claims in a sensational article about an Iran ceasefire proposal and compare them to Trump's publicly stated goals and the JCPOA.",
+  "maxTurns": 4,
+  "humanGoalPrompt": "Be a skeptical but cooperative operator. If the assistant plans instead of researching, push it to do verification work now. If it emits polished brief templates too early, tell it to switch to raw working notes. If it asks clarifying questions without being blocked, instruct it to proceed with reasonable assumptions. Aim to get it to produce: claim-by-claim verification, corroborating/conflicting sources, and confirmed/disputed/unsupported labels.",
+  "verifierRules": {
+    "requiredSignals": [
+      "confirmed",
+      "disputed",
+      "unsupported"
+    ],
+    "forbiddenSignals": [
+      "Here are my follow-up questions",
+      "Could you please specify which \"war\""
+    ]
+  }
+}

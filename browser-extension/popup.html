@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>TAW Bridge</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="app">
+      <h1>TAW Bridge</h1>
+
+      <label>
+        Research Type
+        <select id="researchType">
+          <option value="politics">Politics</option>
+          <option value="tech">Tech</option>
+          <option value="repo">Repo</option>
+          <option value="video">Video</option>
+        </select>
+      </label>
+
+      <label>
+        Token
+        <input id="token" type="password" placeholder="Bridge token" />
+      </label>
+
+      <section class="backend" aria-labelledby="backendTitle">
+        <div class="backend-header">
+          <h2 id="backendTitle">Search Backend</h2>
+          <button id="refreshBackend" type="button" class="secondary">
+            Refresh
+          </button>
+        </div>
+        <p id="backendStatus" class="backend-status">Checking SearXNG…</p>
+        <p id="backendMeta" class="backend-meta"></p>
+        <div class="backend-actions">
+          <button id="startBackend" type="button" class="secondary">
+            Start
+          </button>
+          <button id="keepWarm" type="button" class="secondary">
+            Keep Warm
+          </button>
+          <button id="stopBackend" type="button" class="secondary">
+            Stop
+          </button>
+        </div>
+      </section>
+
+      <label>
+        Working Directory
+        <input id="cwd" type="text" placeholder="Optional cwd override" />
+      </label>
+
+      <label>
+        Initial Question
+        <textarea
+          id="initialQuestion"
+          rows="2"
+          placeholder="Optional starting question"
+        ></textarea>
+      </label>
+
+      <label>
+        Note
+        <textarea id="note" rows="3" placeholder="Optional note"></textarea>
+      </label>
+
+      <div class="actions">
+        <button id="sendPage" type="button">Send Page</button>
+        <button id="sendSelection" type="button">Send Selection</button>
+      </div>
+
+      <p id="status" class="status" aria-live="polite"></p>
+      <pre id="detail" class="detail"></pre>
+    </main>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

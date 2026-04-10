@@ -1,5 +1,7 @@
+import { readFile } from 'node:fs/promises';
 import { createModeArtifact } from '../core/artifacts/writer.js';
 import { getModeDefinition } from '../core/modes/definitions.js';
+import { readResearchSources } from '../core/research/store.js';
 import { updateSessionMetadata } from '../core/sessions/session-manager.js';
 import { createId } from '../utils/ids.js';
 import type { CommandDefinition } from './types.js';
@@ -48,10 +50,13 @@ export const finalizeCommand: CommandDefinition = {
       };
     }
 
+    const artifactContent = context.mode.startsWith('Research ')
+      ? await buildResearchFinalizeContent(context, latestAssistant.body)
+      : latestAssistant.body;
     const artifact = await createModeArtifact(
       context.session,
       context.mode,
-      latestAssistant.body
+      artifactContent
     );
     context.session.metadata.modeHistory.push('general');
     await updateSessionMetadata(context.session);
@@ -79,3 +84,55 @@ export const finalizeCommand: CommandDefinition = {
     };
   }
 };
+
+async function buildResearchFinalizeContent(
+  context: Parameters<CommandDefinition['run']>[1],
+  latestDraft: string
+): Promise<string> {
+  const sources = await readResearchSources(context.session);
+  const notes = await readSessionNotes(context.session.notesPath);
+
+  return [
+    `# ${context.mode} Dossier`,
+    '',
+    '## Final Draft',
+    '',
+    latestDraft.trim(),
+    '',
+    '## Sources Captured',
+    '',
+    sources.length > 0
+      ? sources
+          .map((source, index) =>
+            [
+              `${index + 1}. ${source.title}`,
+              `   - Origin: ${source.origin}`,
+              `   - Status: ${source.status}`,
+              source.url ? `   - URL: ${source.url}` : null,
+              source.snapshotPath
+                ? `   - Snapshot: ${source.snapshotPath}`
+                : null,
+              source.note
+                ? `   - Note: ${source.note.replace(/\n/g, '\n     ')}`
+                : null,
+              source.excerpt ? `   - Excerpt: ${source.excerpt}` : null
+            ]
+              .filter(Boolean)
+              .join('\n')
+          )
+          .join('\n')
+      : 'No sources were captured.',
+    '',
+    '## Session Notes',
+    '',
+    notes.trim() || 'No session notes were captured.'
+  ].join('\n');
+}
+
+async function readSessionNotes(notesPath: string): Promise<string> {
+  try {
+    return await readFile(notesPath, 'utf8');
+  } catch {
+    return '';
+  }
+}

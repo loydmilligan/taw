@@ -20,7 +20,6 @@ import { executeChatTurn } from '../core/chat/engine.js';
 import {
   currentDraftTitle,
   deleteBackward,
-  deleteForward,
   insertInputText,
   moveCursor,
   moveCursorToEnd,
@@ -162,13 +161,8 @@ export function App({ state }: AppProps): React.JSX.Element {
       return;
     }
 
-    if (key.backspace) {
+    if (key.backspace || key.delete) {
       updateInputState(deleteBackward);
-      return;
-    }
-
-    if (key.delete) {
-      updateInputState(deleteForward);
       return;
     }
 
@@ -213,6 +207,23 @@ export function App({ state }: AppProps): React.JSX.Element {
       flushAssistantText(true);
     }
   }, [commandPaletteOpen]);
+
+  React.useEffect(() => {
+    if (
+      appState.queuedInputs.length > 0 &&
+      !appState.isStreaming &&
+      inputState.value.length === 0
+    ) {
+      const nextInput = appState.queuedInputs[0];
+      setAppState((current) => ({
+        ...current,
+        queuedInputs: current.queuedInputs.slice(1)
+      }));
+      globalThis.queueMicrotask(() => {
+        void submitQueuedInput(nextInput);
+      });
+    }
+  }, [appState.queuedInputs, appState.isStreaming, inputState.value.length]);
 
   async function submitInput(): Promise<void> {
     if (appStateRef.current.isStreaming) {
@@ -273,6 +284,7 @@ export function App({ state }: AppProps): React.JSX.Element {
         latestUserInput: trimmed,
         mode: modeAtStart,
         providerConfig: appStateRef.current.providerConfig,
+        globalConfig: appStateRef.current.globalConfig,
         commandReference: appStateRef.current.commandReference,
         session: appStateRef.current.session,
         projectConfig: appStateRef.current.projectConfig,
@@ -350,6 +362,12 @@ export function App({ state }: AppProps): React.JSX.Element {
     }
   }
 
+  async function submitQueuedInput(value: string): Promise<void> {
+    setInputState({ value, cursor: value.length });
+    inputRef.current = { value, cursor: value.length };
+    await submitInput();
+  }
+
   async function runCommand(raw: string): Promise<void> {
     try {
       const parsed = parseCommand(raw);
@@ -379,8 +397,11 @@ export function App({ state }: AppProps): React.JSX.Element {
         model: result.model ?? current.model,
         providerConfig: result.providerConfig ?? current.providerConfig,
         commandReference: current.commandReference,
-        globalConfig: current.globalConfig,
-        projectConfig: current.projectConfig,
+        globalConfig: result.globalConfig ?? current.globalConfig,
+        projectConfig:
+          result.projectConfig === undefined
+            ? current.projectConfig
+            : result.projectConfig,
         session: result.session ?? current.session,
         transcript: [...current.transcript, ...result.entries]
       }));

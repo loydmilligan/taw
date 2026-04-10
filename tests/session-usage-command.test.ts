@@ -5,6 +5,7 @@ import path from 'node:path';
 import { createSession } from '../src/core/sessions/session-manager.js';
 import { appendTelemetryRecord } from '../src/core/telemetry/store.js';
 import { sessionUsageCommand } from '../src/commands/session-usage.js';
+import { globalConfigSchema } from '../src/services/config/schema.js';
 
 const originalHome = process.env.HOME;
 
@@ -24,7 +25,10 @@ describe('session usage command', () => {
     process.env.HOME = tempDir;
     const cwd = path.join(tempDir, 'project');
     await mkdir(path.join(cwd, '.ai'), { recursive: true });
-    await writeFile(path.join(cwd, '.ai', 'config.json'), JSON.stringify({ projectName: 'project' }));
+    await writeFile(
+      path.join(cwd, '.ai', 'config.json'),
+      JSON.stringify({ projectName: 'project' })
+    );
     const session = await createSession({ cwd });
 
     await appendTelemetryRecord(session, {
@@ -98,11 +102,7 @@ describe('session usage command', () => {
         providerConfig: { provider: 'openrouter', model: 'openrouter/auto' },
         mode: 'General',
         globalConfig: {
-          defaultProvider: 'openrouter',
-          defaultModel: 'openrouter/auto',
-          theme: {},
-          outputBehavior: { autoSaveNotes: true },
-          allowedContextDirs: [],
+          ...globalConfigSchema.parse({}),
           providers: { openrouter: {}, openai: {}, anthropic: {} }
         },
         projectConfig: null

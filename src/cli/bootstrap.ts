@@ -5,8 +5,18 @@ import { ensureAssistantReferenceFiles } from '../core/context/assistant-files.j
 import { commandRegistry } from '../commands/registry.js';
 import { summarizeSessionUsage } from '../core/telemetry/derivation.js';
 import { readTelemetrySummaries } from '../core/telemetry/store.js';
+import { addBrowserPayloadAsSource } from '../core/research/store.js';
+import type { BrowserResearchPayload } from '../core/research/types.js';
+import { createId } from '../utils/ids.js';
 
-export async function bootstrapApp(cwd: string): Promise<AppState> {
+export interface BootstrapOptions {
+  browserPayload?: BrowserResearchPayload | null;
+}
+
+export async function bootstrapApp(
+  cwd: string,
+  options: BootstrapOptions = {}
+): Promise<AppState> {
   const config = await loadConfig(cwd);
   const session = await createSession({
     cwd,
@@ -19,9 +29,12 @@ export async function bootstrapApp(cwd: string): Promise<AppState> {
     commandRegistry
   );
   const summaries = await readTelemetrySummaries(session);
+  const browserState = options.browserPayload
+    ? await buildBrowserSeedState(session, options.browserPayload)
+    : null;
 
   return {
-    mode: 'General',
+    mode: browserState?.mode ?? 'General',
     phase: 'idle',
     provider: session.metadata.provider,
     model: session.metadata.model,
@@ -33,18 +46,21 @@ export async function bootstrapApp(cwd: string): Promise<AppState> {
     session,
     transcript: createInitialTranscript(
       session.storageMode,
-      session.sessionDir
+      session.sessionDir,
+      browserState?.entries ?? []
     ),
     usage: {
       session: summarizeSessionUsage(summaries),
       lastRequest: summaries.at(-1) ?? null
-    }
+    },
+    queuedInputs: browserState?.queuedInputs ?? []
   };
 }
 
 function createInitialTranscript(
   storageMode: 'general' | 'project',
-  sessionDir: string
+  sessionDir: string,
+  extraEntries: TranscriptEntry[] = []
 ): TranscriptEntry[] {
   return [
     {
@@ -61,6 +77,60 @@ function createInitialTranscript(
       kind: 'notice',
       title: 'Session Folder',
       body: sessionDir
-    }
+    },
+    ...extraEntries
   ];
+}
+
+async function buildBrowserSeedState(
+  session: Awaited<ReturnType<typeof createSession>>,
+  payload: BrowserResearchPayload
+): Promise<{
+  mode: string;
+  entries: TranscriptEntry[];
+  queuedInputs: string[];
+}> {
+  const source = await addBrowserPayloadAsSource(session, payload);
+  const mode =
+    payload.researchType === 'politics'
+      ? 'Research Politics'
+      : payload.researchType === 'tech'
+        ? 'Research Tech'
+        : payload.researchType === 'repo'
+          ? 'Research Repo'
+          : 'Research Video';
+
+  return {
+    mode,
+    entries: [
+      {
+        id: createId('browser-source'),
+        kind: 'notice',
+        title: 'Browser Source Added',
+        body: `${source.title}${source.url ? `\n${source.url}` : ''}`
+      }
+    ],
+    queuedInputs: [
+      `/research ${payload.researchType}${payload.initialQuestion ? ` ${payload.initialQuestion}` : ''}`.trim(),
+      buildInitialResearchPrompt(payload)
+    ]
+  };
+}
+
+function buildInitialResearchPrompt(payload: BrowserResearchPayload): string {
+  return [
+    payload.initialQuestion
+      ? `Initial question: ${payload.initialQuestion}`
+      : null,
+    `Source title: ${payload.title}`,
+    payload.url ? `Source url: ${payload.url}` : null,
+    payload.selectedText ? `Selected text:\n${payload.selectedText}` : null,
+    payload.pageTextExcerpt
+      ? `Page excerpt:\n${payload.pageTextExcerpt}`
+      : null,
+    payload.userNote ? `User note: ${payload.userNote}` : null,
+    'Start by using this source as context and produce a draft research response.'
+  ]
+    .filter(Boolean)
+    .join('\n\n');
 }

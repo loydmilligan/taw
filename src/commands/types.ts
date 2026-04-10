@@ -18,6 +18,8 @@ export interface CommandResult {
   mode?: string;
   phase?: 'idle' | 'thinking' | 'draft-ready';
   providerConfig?: ProviderConfig;
+  globalConfig?: GlobalConfig;
+  projectConfig?: ProjectConfig | null;
   provider?: string;
   model?: string;
   shouldExit?: boolean;

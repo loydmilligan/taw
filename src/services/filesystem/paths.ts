@@ -25,6 +25,14 @@ export function getGlobalAssistantDir(): string {
   return path.join(getAppConfigDir(), 'assistant');
 }
 
+export function getGlobalEnvPath(): string {
+  return path.join(getAppConfigDir(), '.env');
+}
+
+export function getProjectEnvPath(cwd: string): string {
+  return path.join(cwd, '.env');
+}
+
 export function getLogsDir(): string {
   return path.join(getAppConfigDir(), 'logs');
 }

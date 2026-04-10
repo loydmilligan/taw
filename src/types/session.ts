@@ -25,6 +25,8 @@ export interface SessionRecord {
   metadata: SessionMetadata;
   sessionDir: string;
   artifactsDir: string;
+  sourcesDir: string;
+  sourcesJsonPath: string;
   notesPath: string;
   sessionJsonPath: string;
   summaryPath: string;

@@ -17,21 +17,33 @@ export interface CreateSessionOptions {
   model?: string;
 }
 
-export async function createSession(options: CreateSessionOptions): Promise<SessionRecord> {
+export async function createSession(
+  options: CreateSessionOptions
+): Promise<SessionRecord> {
   const createdAt = new Date().toISOString();
   const sessionId = createSessionId(createdAt);
-  const projectRoot = (await isProjectInitialized(options.cwd)) ? options.cwd : null;
+  const projectRoot = (await isProjectInitialized(options.cwd))
+    ? options.cwd
+    : null;
   const storageMode = projectRoot ? 'project' : 'general';
-  const sessionsRoot = projectRoot ? getProjectSessionsRoot(projectRoot) : getGeneralSessionsRoot();
+  const sessionsRoot = projectRoot
+    ? getProjectSessionsRoot(projectRoot)
+    : getGeneralSessionsRoot();
   const slug = createSessionSlug(projectRoot ?? options.cwd);
-  const sessionDir = path.join(sessionsRoot, `${toSessionPrefix(createdAt)}_${slug}`);
+  const sessionDir = path.join(
+    sessionsRoot,
+    `${toSessionPrefix(createdAt)}_${slug}`
+  );
   const artifactsDir = path.join(sessionDir, 'artifacts');
+  const sourcesDir = path.join(sessionDir, 'sources');
   const notesPath = path.join(sessionDir, 'notes.md');
   const sessionJsonPath = path.join(sessionDir, 'session.json');
+  const sourcesJsonPath = path.join(sessionDir, 'sources.json');
   const summaryPath = path.join(sessionDir, 'session-summary.md');
 
   await ensureBaseDirectories(options.cwd);
   await mkdir(artifactsDir, { recursive: true });
+  await mkdir(sourcesDir, { recursive: true });
 
   const metadata: SessionMetadata = {
     id: sessionId,
@@ -48,13 +60,20 @@ export async function createSession(options: CreateSessionOptions): Promise<Sess
 
   sessionMetadataSchema.parse(metadata);
 
-  await writeFile(sessionJsonPath, `${JSON.stringify(metadata, null, 2)}\n`, 'utf8');
+  await writeFile(
+    sessionJsonPath,
+    `${JSON.stringify(metadata, null, 2)}\n`,
+    'utf8'
+  );
+  await writeFile(sourcesJsonPath, '[]\n', 'utf8');
   await writeFile(notesPath, buildInitialNotes(metadata, storageMode), 'utf8');
 
   return {
     metadata,
     sessionDir,
     artifactsDir,
+    sourcesDir,
+    sourcesJsonPath,
     notesPath,
     sessionJsonPath,
     summaryPath,
@@ -63,12 +82,20 @@ export async function createSession(options: CreateSessionOptions): Promise<Sess
   };
 }
 
-export async function updateSessionMetadata(session: SessionRecord): Promise<void> {
+export async function updateSessionMetadata(
+  session: SessionRecord
+): Promise<void> {
   sessionMetadataSchema.parse(session.metadata);
-  await writeFile(session.sessionJsonPath, `${JSON.stringify(session.metadata, null, 2)}\n`, 'utf8');
+  await writeFile(
+    session.sessionJsonPath,
+    `${JSON.stringify(session.metadata, null, 2)}\n`,
+    'utf8'
+  );
 }
 
-export async function loadSessionMetadata(sessionJsonPath: string): Promise<SessionMetadata> {
+export async function loadSessionMetadata(
+  sessionJsonPath: string
+): Promise<SessionMetadata> {
   const content = await readFile(sessionJsonPath, 'utf8');
   return sessionMetadataSchema.parse(JSON.parse(content));
 }
@@ -104,17 +131,22 @@ export function createSessionSlug(seedPath: string): string {
 }
 
 export function sanitizeSlug(value: string): string {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'session';
+  return (
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'session'
+  );
 }
 
 function toSessionPrefix(createdAt: string): string {
-  return createdAt
-    .slice(0, 19)
-    .replace('T', '_')
-    .replaceAll(':', '-');
+  return createdAt.slice(0, 19).replace('T', '_').replaceAll(':', '-');
 }
 
-function buildInitialNotes(metadata: SessionMetadata, storageMode: SessionRecord['storageMode']): string {
+function buildInitialNotes(
+  metadata: SessionMetadata,
+  storageMode: SessionRecord['storageMode']
+): string {
   return [
     '# Session Notes',
     '',
