@@ -3,7 +3,10 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { createSession } from '../src/core/sessions/session-manager.js';
-import { finalizeCommand } from '../src/commands/finalize.js';
+import {
+  finalizeCommand,
+  finalizeGenerateCommand
+} from '../src/commands/finalize.js';
 import { addBrowserPayloadAsSource } from '../src/core/research/store.js';
 import { globalConfigSchema } from '../src/services/config/schema.js';
 import type { TranscriptEntry } from '../src/types/app.js';
@@ -154,6 +157,75 @@ describe('finalize command', () => {
     expect(result.mode).toBeUndefined();
     expect(session.metadata.artifacts).toHaveLength(0);
     expect(result.entries[0]?.title).toBe('No Draft Available');
+  });
+
+  it('explains how to proceed when research finalize has no completed draft', async () => {
+    tempDir = await mkdtemp(path.join(os.tmpdir(), 'taw-finalize-'));
+    process.env.HOME = tempDir;
+    const cwd = path.join(tempDir, 'project');
+    await mkdir(path.join(cwd, '.ai'), { recursive: true });
+    await writeFile(
+      path.join(cwd, '.ai', 'config.json'),
+      JSON.stringify({ projectName: 'project' })
+    );
+    const session = await createSession({ cwd });
+
+    const result = await finalizeCommand.run(
+      { name: 'finalize', args: [], raw: '/finalize' },
+      {
+        cwd,
+        session,
+        transcript: [],
+        providerConfig: { provider: 'openrouter', model: 'openrouter/auto' },
+        mode: 'Research Politics',
+        globalConfig: {
+          ...globalConfigSchema.parse({}),
+          providers: { openrouter: {}, openai: {}, anthropic: {} }
+        },
+        projectConfig: null
+      }
+    );
+
+    expect(result.entries[0]?.title).toBe('No Draft Available');
+    expect(result.entries[0]?.body).toContain(
+      'There is no completed research draft to save yet.'
+    );
+    expect(result.entries[0]?.body).toContain('/finalize-gen');
+  });
+
+  it('queues draft generation followed by finalize when no draft exists', async () => {
+    tempDir = await mkdtemp(path.join(os.tmpdir(), 'taw-finalize-'));
+    process.env.HOME = tempDir;
+    const cwd = path.join(tempDir, 'project');
+    await mkdir(path.join(cwd, '.ai'), { recursive: true });
+    await writeFile(
+      path.join(cwd, '.ai', 'config.json'),
+      JSON.stringify({ projectName: 'project' })
+    );
+    const session = await createSession({ cwd });
+
+    const result = await finalizeGenerateCommand.run(
+      { name: 'finalize-gen', args: [], raw: '/finalize-gen' },
+      {
+        cwd,
+        session,
+        transcript: [],
+        providerConfig: { provider: 'openrouter', model: 'openrouter/auto' },
+        mode: 'Research Politics',
+        globalConfig: {
+          ...globalConfigSchema.parse({}),
+          providers: { openrouter: {}, openai: {}, anthropic: {} }
+        },
+        projectConfig: null
+      }
+    );
+
+    expect(result.queuedInputs).toHaveLength(2);
+    expect(result.queuedInputs?.[0]).toContain(
+      'Produce the complete final research draft now'
+    );
+    expect(result.queuedInputs?.[1]).toBe('/finalize');
+    expect(result.entries[0]?.title).toBe('Draft Requested');
   });
 
   it('includes research sources and session notes in finalized research artifacts', async () => {

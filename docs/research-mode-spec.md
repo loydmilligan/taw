@@ -24,6 +24,7 @@ Supporting commands:
 
 - `/sources`
 - `/open-source <index>`
+- `/source-views [index]`
 - `/search-source <query>`
 - `/source-note <index> <note>`
 - `/rate-source <index|url>`
@@ -207,6 +208,7 @@ Implemented:
 - browser bridge intake for new research sessions
 - `/sources`
 - `/open-source <index>` with tmux side-pane integration and browser hints
+- `/source-views [index]` for listing and jumping between managed source windows
 - `/source-note <index> <note>`
 - `/search-source <query>`
 - `/rate-source <index|url>`
@@ -221,7 +223,7 @@ Remaining:
 - comparison workflows
 - richer fetch and extraction paths
 - source rating annotations in `/sources`
-- managed source views or source tabs
+- richer managed source views or source tabs beyond the current list/jump flow
 - high-token/context-size warnings
 - adaptive model policy
 
@@ -276,6 +278,7 @@ Implemented behavior:
 - warn when a turn crosses configured dollar thresholds
 - add `/config budget show`, `/config budget high-turn <amount>`, and
   `/config budget high-session <amount>`
+- add `/config budget high-prompt <tokens>` and `/config budget high-context <chars>`
 
 Remaining near-term behavior:
 
@@ -322,10 +325,9 @@ Implemented minimum behavior:
 Preferred later behavior:
 
 - name source views from the source title when they become managed windows
-- open sources as named tmux windows rather than disposable side panes
-- track open source views in session state
+- keep open sources in named tmux windows and track them in session state
 - make `/open-source <index>` jump to the existing view when one is already open
-- add `/source-tabs` or fold open-view state into `/sources`
+- extend `/source-views` or fold more open-view state into `/sources`
 - allow a source view to be marked reviewed, useful, dubious, or ignored
 
 ## Non-goals for MVP

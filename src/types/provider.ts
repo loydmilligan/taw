@@ -31,6 +31,14 @@ export interface ProviderStreamStartInfo {
 
 export interface ProviderStreamFinalInfo {
   finishReason?: string | null;
+  usage?: {
+    promptTokens?: number | null;
+    completionTokens?: number | null;
+    reasoningTokens?: number | null;
+    cachedTokens?: number | null;
+    totalCost?: number | null;
+    upstreamInferenceCost?: number | null;
+  };
 }
 
 export interface ProviderFunctionTool {

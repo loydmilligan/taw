@@ -46,3 +46,13 @@ export const browserResearchPayloadSchema = z.object({
   sentAt: z.string(),
   initialQuestion: z.string().nullable().default(null)
 });
+
+export const researchSourceViewSchema = z.object({
+  sourceId: z.string(),
+  sourceIndex: z.number().int().positive(),
+  title: z.string(),
+  tmuxWindowId: z.string(),
+  tmuxWindowName: z.string(),
+  openedAt: z.string(),
+  lastOpenedAt: z.string()
+});

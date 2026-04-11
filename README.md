@@ -66,9 +66,11 @@ A minimal Chromium extension MVP lives in [browser-extension/README.md](browser-
 - `/research <politics|tech|repo|video>`
 - `/workflow <generate|review>`
 - `/finalize`
+- `/finalize-gen`
 - `/exit-mode`
 - `/sources`
 - `/open-source <index>`
+- `/source-views [index]`
 - `/source-note <index> <note>`
 - `/search-source <query>`
 - `/rate-source <index|url>`
@@ -141,6 +143,8 @@ Useful search config examples:
 /config budget show
 /config budget high-turn 0.05
 /config budget high-session 0.25
+/config budget high-prompt 12000
+/config budget high-context 50000
 ```
 
 Source rating data is read from `~/.config/taw/sources.db` by default. You can

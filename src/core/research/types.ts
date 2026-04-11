@@ -36,3 +36,13 @@ export interface BrowserResearchPayload {
   sentAt: string;
   initialQuestion: string | null;
 }
+
+export interface ResearchSourceView {
+  sourceId: string;
+  sourceIndex: number;
+  title: string;
+  tmuxWindowId: string;
+  tmuxWindowName: string;
+  openedAt: string;
+  lastOpenedAt: string;
+}

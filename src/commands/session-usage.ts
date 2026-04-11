@@ -1,5 +1,6 @@
 import { summarizeSessionUsage } from '../core/telemetry/derivation.js';
 import { readTelemetrySummaries } from '../core/telemetry/store.js';
+import { readResearchSources } from '../core/research/store.js';
 import { createId } from '../utils/ids.js';
 import type { CommandDefinition } from './types.js';
 
@@ -11,6 +12,9 @@ export const sessionUsageCommand: CommandDefinition = {
     const summaries = await readTelemetrySummaries(context.session);
     const usage = summarizeSessionUsage(summaries);
     const last = summaries.at(-1);
+    const sources = context.mode.startsWith('Research ')
+      ? await readResearchSources(context.session)
+      : [];
     const warnings = [
       last?.total_cost != null &&
       context.globalConfig.budget.highTurnCostWarning > 0 &&
@@ -20,6 +24,19 @@ export const sessionUsageCommand: CommandDefinition = {
       context.globalConfig.budget.highSessionCostWarning > 0 &&
       usage.totalCost >= context.globalConfig.budget.highSessionCostWarning
         ? `High session cost: $${usage.totalCost.toFixed(6)}`
+        : null,
+      (last?.prompt_tokens ?? 0) >=
+        context.globalConfig.budget.highPromptTokensWarning &&
+      context.globalConfig.budget.highPromptTokensWarning > 0
+        ? `High prompt tokens: ${last?.prompt_tokens ?? 0}`
+        : null,
+      (last?.prompt_context_length_chars ?? 0) >=
+        context.globalConfig.budget.highContextCharsWarning &&
+      context.globalConfig.budget.highContextCharsWarning > 0
+        ? `High prompt context: ${last?.prompt_context_length_chars ?? 0} chars`
+        : null,
+      context.mode.startsWith('Research ') && sources.length >= 12
+        ? `High source count: ${sources.length}`
         : null
     ].filter(Boolean);
 
@@ -38,6 +55,12 @@ export const sessionUsageCommand: CommandDefinition = {
             `Cached Tokens: ${usage.cachedTokens}`,
             `Average Latency: ${usage.averageLatencyMs ?? 'n/a'} ms`,
             `Artifacts Generated: ${usage.artifactsGenerated}`,
+            last
+              ? `Last Prompt Context: ${last.prompt_context_length_chars} chars`
+              : '',
+            context.mode.startsWith('Research ')
+              ? `Research Sources: ${sources.length}`
+              : '',
             warnings.length > 0 ? `Warnings:\n${warnings.join('\n')}` : ''
           ].join('\n')
         }

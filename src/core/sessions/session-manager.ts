@@ -39,6 +39,7 @@ export async function createSession(
   const notesPath = path.join(sessionDir, 'notes.md');
   const sessionJsonPath = path.join(sessionDir, 'session.json');
   const sourcesJsonPath = path.join(sessionDir, 'sources.json');
+  const sourceViewsJsonPath = path.join(sessionDir, 'source-views.json');
   const summaryPath = path.join(sessionDir, 'session-summary.md');
 
   await ensureBaseDirectories(options.cwd);
@@ -66,6 +67,7 @@ export async function createSession(
     'utf8'
   );
   await writeFile(sourcesJsonPath, '[]\n', 'utf8');
+  await writeFile(sourceViewsJsonPath, '[]\n', 'utf8');
   await writeFile(notesPath, buildInitialNotes(metadata, storageMode), 'utf8');
 
   return {
@@ -74,6 +76,7 @@ export async function createSession(
     artifactsDir,
     sourcesDir,
     sourcesJsonPath,
+    sourceViewsJsonPath,
     notesPath,
     sessionJsonPath,
     summaryPath,

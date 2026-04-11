@@ -130,6 +130,7 @@ Notes:
 - [x] Add helper-service stack for SearXNG and bridge status controls
 - [x] Improve research `/finalize` to include the current draft, saved sources, and session notes
 - [x] Add source-pane usage hints and clear return-to-TAW guidance when opening sources
+- [x] Add `/source-views [index]` to list and jump between managed source windows
 - [x] Add `/source-note <index> <note>` for observations made while reading a source
 - [x] Add deterministic `/search-source <query>` for adding search results to `sources.json`
 - [x] Add `/rate-source <index|url>` using a static SourceInfo-derived SQLite database as a first pass
@@ -137,7 +138,7 @@ Notes:
 - [ ] Add persistent interest and watchlist memory files
 - [ ] Add explicit memory commands for interests, ideas, and repos
 - [ ] Add manual QA coverage for browser-to-terminal workflows
-- [ ] Track open source views as named tmux windows or managed panes, and jump to existing views instead of duplicating them
+- [ ] Extend managed source views with richer tab state, reviewed markers, and closing/cleanup controls
 - [ ] Add richer research `/finalize` synthesis across the full transcript, not only the latest draft plus stored notes
 - [ ] Add optional rating annotations directly to `/sources`
 - [ ] Add high-token warnings alongside the implemented dollar-cost warnings

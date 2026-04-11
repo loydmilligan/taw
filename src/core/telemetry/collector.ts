@@ -92,6 +92,7 @@ export async function buildAndStoreTelemetrySummary(input: {
   artifactGenerated: boolean;
   artifactPath: string | null;
 }): Promise<TelemetryRequestSummary> {
+  const directUsage = input.turn.finalInfo.usage;
   let metadata: OpenRouterGenerationMetadata | null = null;
   let metadataFetchStatus: TelemetryRequestSummary['metadata_fetch_status'] =
     input.providerConfig.provider === 'openrouter' ? 'failed' : 'not_supported';
@@ -99,7 +100,8 @@ export async function buildAndStoreTelemetrySummary(input: {
   if (
     input.providerConfig.provider === 'openrouter' &&
     input.providerConfig.apiKey &&
-    input.turn.streamInfo.generationId
+    input.turn.streamInfo.generationId &&
+    !directUsage
   ) {
     try {
       metadata = await fetchOpenRouterGenerationMetadata(
@@ -160,16 +162,22 @@ export async function buildAndStoreTelemetrySummary(input: {
     time_to_first_token_ms: input.turn.firstTokenAt
       ? new Date(input.turn.firstTokenAt).getTime() - new Date(input.turn.startedAt).getTime()
       : null,
-    prompt_tokens: metadata?.tokens_prompt ?? null,
-    completion_tokens: metadata?.tokens_completion ?? null,
-    reasoning_tokens: metadata?.native_tokens_reasoning ?? null,
-    cached_tokens: metadata?.native_tokens_cached ?? null,
+    prompt_tokens: directUsage?.promptTokens ?? metadata?.tokens_prompt ?? null,
+    completion_tokens:
+      directUsage?.completionTokens ?? metadata?.tokens_completion ?? null,
+    reasoning_tokens:
+      directUsage?.reasoningTokens ?? metadata?.native_tokens_reasoning ?? null,
+    cached_tokens:
+      directUsage?.cachedTokens ?? metadata?.native_tokens_cached ?? null,
     native_tokens_prompt: metadata?.native_tokens_prompt ?? null,
     native_tokens_completion: metadata?.native_tokens_completion ?? null,
     native_tokens_reasoning: metadata?.native_tokens_reasoning ?? null,
     native_tokens_cached: metadata?.native_tokens_cached ?? null,
-    total_cost: metadata?.total_cost ?? null,
-    upstream_inference_cost: metadata?.upstream_inference_cost ?? null,
+    total_cost: directUsage?.totalCost ?? metadata?.total_cost ?? null,
+    upstream_inference_cost:
+      directUsage?.upstreamInferenceCost ??
+      metadata?.upstream_inference_cost ??
+      null,
     cache_discount: metadata?.cache_discount ?? null,
     task_type: deriveTaskType(input.turn.mode),
     workflow_stage: deriveWorkflowStage(input.turn.mode),

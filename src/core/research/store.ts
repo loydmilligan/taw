@@ -1,7 +1,11 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { researchSourceSchema } from './schema.js';
-import type { BrowserResearchPayload, ResearchSource } from './types.js';
+import { researchSourceSchema, researchSourceViewSchema } from './schema.js';
+import type {
+  BrowserResearchPayload,
+  ResearchSource,
+  ResearchSourceView
+} from './types.js';
 import type { SessionRecord } from '../../types/session.js';
 import { createId } from '../../utils/ids.js';
 
@@ -24,6 +28,29 @@ export async function writeResearchSources(
   await writeFile(
     session.sourcesJsonPath,
     `${JSON.stringify(sources, null, 2)}\n`,
+    'utf8'
+  );
+}
+
+export async function readResearchSourceViews(
+  session: SessionRecord
+): Promise<ResearchSourceView[]> {
+  try {
+    const content = await readFile(session.sourceViewsJsonPath, 'utf8');
+    const parsed = JSON.parse(content) as unknown[];
+    return parsed.map((item) => researchSourceViewSchema.parse(item));
+  } catch {
+    return [];
+  }
+}
+
+export async function writeResearchSourceViews(
+  session: SessionRecord,
+  views: ResearchSourceView[]
+): Promise<void> {
+  await writeFile(
+    session.sourceViewsJsonPath,
+    `${JSON.stringify(views, null, 2)}\n`,
     'utf8'
   );
 }
@@ -83,6 +110,29 @@ export async function updateResearchSource(
   };
   sources[index - 1] = next;
   await writeResearchSources(session, sources);
+  return next;
+}
+
+export async function upsertResearchSourceView(
+  session: SessionRecord,
+  view: ResearchSourceView
+): Promise<ResearchSourceView[]> {
+  const existing = await readResearchSourceViews(session);
+  const next = [
+    ...existing.filter((item) => item.sourceId !== view.sourceId),
+    view
+  ].sort((left, right) => left.sourceIndex - right.sourceIndex);
+  await writeResearchSourceViews(session, next);
+  return next;
+}
+
+export async function removeResearchSourceView(
+  session: SessionRecord,
+  sourceId: string
+): Promise<ResearchSourceView[]> {
+  const existing = await readResearchSourceViews(session);
+  const next = existing.filter((item) => item.sourceId !== sourceId);
+  await writeResearchSourceViews(session, next);
   return next;
 }
 

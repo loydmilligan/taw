@@ -6,6 +6,7 @@ import { createSession } from '../src/core/sessions/session-manager.js';
 import { appendTelemetryRecord } from '../src/core/telemetry/store.js';
 import { sessionUsageCommand } from '../src/commands/session-usage.js';
 import { globalConfigSchema } from '../src/services/config/schema.js';
+import { addBrowserPayloadAsSource } from '../src/core/research/store.js';
 
 const originalHome = process.env.HOME;
 
@@ -88,10 +89,24 @@ describe('session usage command', () => {
       requires_followup: false,
       context_summary_present: false,
       recent_artifact_count: 0,
-      prompt_context_length_chars: 50,
+      prompt_context_length_chars: 60000,
       error_kind: null,
       error_message: null
     });
+
+    for (let index = 0; index < 12; index += 1) {
+      await addBrowserPayloadAsSource(session, {
+        kind: 'article',
+        researchType: 'politics',
+        url: `https://example.com/story-${index}`,
+        title: `Story ${index}`,
+        selectedText: null,
+        pageTextExcerpt: null,
+        userNote: null,
+        sentAt: new Date().toISOString(),
+        initialQuestion: null
+      });
+    }
 
     const result = await sessionUsageCommand.run(
       { name: 'session-usage', args: [], raw: '/session-usage' },
@@ -100,9 +115,14 @@ describe('session usage command', () => {
         session,
         transcript: [],
         providerConfig: { provider: 'openrouter', model: 'openrouter/auto' },
-        mode: 'General',
+        mode: 'Research Politics',
         globalConfig: {
-          ...globalConfigSchema.parse({}),
+          ...globalConfigSchema.parse({
+            budget: {
+              highPromptTokensWarning: 5,
+              highContextCharsWarning: 1000
+            }
+          }),
           providers: { openrouter: {}, openai: {}, anthropic: {} }
         },
         projectConfig: null
@@ -111,5 +131,14 @@ describe('session usage command', () => {
 
     expect(result.entries[0]?.body).toContain('Total Cost: $0.001000');
     expect(result.entries[0]?.body).toContain('Prompt Tokens: 10');
+    expect(result.entries[0]?.body).toContain(
+      'Last Prompt Context: 60000 chars'
+    );
+    expect(result.entries[0]?.body).toContain('Research Sources: 12');
+    expect(result.entries[0]?.body).toContain('High prompt tokens: 10');
+    expect(result.entries[0]?.body).toContain(
+      'High prompt context: 60000 chars'
+    );
+    expect(result.entries[0]?.body).toContain('High source count: 12');
   });
 });

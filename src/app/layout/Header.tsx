@@ -22,7 +22,7 @@ export function Header({ state }: HeaderProps): React.JSX.Element {
   return (
     <Box flexDirection="column" marginBottom={1}>
       <Box justifyContent="space-between">
-        <Text color={theme.accent}>TAW 0.1.0-beta.2</Text>
+        <Text color={theme.accent}>TAW 0.1.0-beta.3</Text>
         <Text color={theme.muted}>{state.session.metadata.slug}</Text>
       </Box>
       <Box justifyContent="space-between">
@@ -36,6 +36,17 @@ export function Header({ state }: HeaderProps): React.JSX.Element {
         </Text>
       </Box>
       <Text color={theme.muted}>Session: {state.session.sessionDir}</Text>
+      {state.openrouterAccount ? (
+        <Text color={state.openrouterAccount.error ? theme.warning : theme.muted}>
+          OpenRouter Credits:{' '}
+          {state.openrouterAccount.remainingCredits !== null
+            ? `$${state.openrouterAccount.remainingCredits.toFixed(2)}`
+            : 'unavailable'}
+          {state.openrouterAccount.error
+            ? ` (${state.openrouterAccount.error})`
+            : ''}
+        </Text>
+      ) : null}
     </Box>
   );
 }

@@ -52,6 +52,20 @@ export class OpenAiCompatibleProvider implements ProviderAdapter {
     )) as unknown as AsyncIterable<{
       id?: string | null;
       model?: string | null;
+      usage?: {
+        prompt_tokens?: number | null;
+        completion_tokens?: number | null;
+        cost?: number | null;
+        cost_details?: {
+          upstream_inference_cost?: number | null;
+        } | null;
+        completion_tokens_details?: {
+          reasoning_tokens?: number | null;
+        } | null;
+        prompt_tokens_details?: {
+          cached_tokens?: number | null;
+        } | null;
+      } | null;
       choices?: Array<{
         finish_reason?: string | null;
         delta?: {
@@ -76,9 +90,24 @@ export class OpenAiCompatibleProvider implements ProviderAdapter {
       }
 
       const finishReason = chunk.choices?.[0]?.finish_reason;
-      if (finishReason) {
+      const usage = chunk.usage
+        ? {
+            promptTokens: chunk.usage.prompt_tokens ?? null,
+            completionTokens: chunk.usage.completion_tokens ?? null,
+            reasoningTokens:
+              chunk.usage.completion_tokens_details?.reasoning_tokens ?? null,
+            cachedTokens:
+              chunk.usage.prompt_tokens_details?.cached_tokens ?? null,
+            totalCost: chunk.usage.cost ?? null,
+            upstreamInferenceCost:
+              chunk.usage.cost_details?.upstream_inference_cost ?? null
+          }
+        : undefined;
+
+      if (finishReason || usage) {
         options?.onFinal?.({
-          finishReason
+          finishReason,
+          usage
         });
       }
 
@@ -124,6 +153,20 @@ export class OpenAiCompatibleProvider implements ProviderAdapter {
     )) as unknown as {
       id?: string | null;
       model?: string | null;
+      usage?: {
+        prompt_tokens?: number | null;
+        completion_tokens?: number | null;
+        cost?: number | null;
+        cost_details?: {
+          upstream_inference_cost?: number | null;
+        } | null;
+        completion_tokens_details?: {
+          reasoning_tokens?: number | null;
+        } | null;
+        prompt_tokens_details?: {
+          cached_tokens?: number | null;
+        } | null;
+      } | null;
       choices?: Array<{
         finish_reason?: string | null;
         message?: {
@@ -140,7 +183,21 @@ export class OpenAiCompatibleProvider implements ProviderAdapter {
 
     const choice = completion.choices?.[0];
     options?.onFinal?.({
-      finishReason: choice?.finish_reason ?? null
+      finishReason: choice?.finish_reason ?? null,
+      usage: completion.usage
+        ? {
+            promptTokens: completion.usage.prompt_tokens ?? null,
+            completionTokens: completion.usage.completion_tokens ?? null,
+            reasoningTokens:
+              completion.usage.completion_tokens_details?.reasoning_tokens ??
+              null,
+            cachedTokens:
+              completion.usage.prompt_tokens_details?.cached_tokens ?? null,
+            totalCost: completion.usage.cost ?? null,
+            upstreamInferenceCost:
+              completion.usage.cost_details?.upstream_inference_cost ?? null
+          }
+        : undefined
     });
 
     return {

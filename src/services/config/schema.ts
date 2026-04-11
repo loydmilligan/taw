@@ -60,11 +60,15 @@ export const globalConfigSchema = z.object({
   budget: z
     .object({
       highTurnCostWarning: z.number().nonnegative().default(0.05),
-      highSessionCostWarning: z.number().nonnegative().default(0.25)
+      highSessionCostWarning: z.number().nonnegative().default(0.25),
+      highPromptTokensWarning: z.number().int().nonnegative().default(12000),
+      highContextCharsWarning: z.number().int().nonnegative().default(50000)
     })
     .default({
       highTurnCostWarning: 0.05,
-      highSessionCostWarning: 0.25
+      highSessionCostWarning: 0.25,
+      highPromptTokensWarning: 12000,
+      highContextCharsWarning: 50000
     }),
   sourceRatings: z
     .object({
@@ -87,7 +91,8 @@ export const globalConfigSchema = z.object({
       openrouter: z
         .object({
           apiKey: z.string().optional(),
-          baseUrl: z.string().optional()
+          baseUrl: z.string().optional(),
+          managementApiKey: z.string().optional()
         })
         .default({}),
       openai: z

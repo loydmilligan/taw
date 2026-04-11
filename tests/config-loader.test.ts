@@ -68,4 +68,21 @@ describe('config loader', () => {
     expect(config.providerConfig.provider).toBe('openrouter');
     expect(config.providerConfig.apiKey).toBe('env-router-key');
   });
+
+  it('loads the OpenRouter management key from TAW env files', async () => {
+    tempDir = await mkdtemp(path.join(os.tmpdir(), 'taw-config-'));
+    process.env.HOME = tempDir;
+    delete process.env.OPENROUTER_MANAGEMENT_KEY;
+    const cwd = path.join(tempDir, 'project');
+    await mkdir(path.join(tempDir, '.config', 'taw'), { recursive: true });
+    await mkdir(cwd, { recursive: true });
+    await writeFile(
+      path.join(tempDir, '.config', 'taw', '.env'),
+      'OPENROUTER_MANAGEMENT_KEY=mgmt-router-key\n'
+    );
+
+    const config = await loadConfig(cwd);
+
+    expect(config.openrouterManagementKey).toBe('mgmt-router-key');
+  });
 });

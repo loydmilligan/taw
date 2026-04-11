@@ -14,6 +14,7 @@ export interface LoadedConfig {
   globalConfig: GlobalConfig;
   projectConfig: ProjectConfig | null;
   providerConfig: ProviderConfig;
+  openrouterManagementKey?: string;
 }
 
 export async function loadConfig(cwd: string): Promise<LoadedConfig> {
@@ -39,7 +40,10 @@ export async function loadConfig(cwd: string): Promise<LoadedConfig> {
       baseUrl: providerSettings.baseUrl ?? getDefaultBaseUrl(provider),
       maxCompletionTokens:
         projectConfig?.maxCompletionTokens ?? globalConfig.maxCompletionTokens
-    }
+    },
+    openrouterManagementKey:
+      globalConfig.providers.openrouter.managementApiKey ??
+      process.env.OPENROUTER_MANAGEMENT_KEY
   };
 }
 

@@ -403,6 +403,7 @@ export function App({ state }: AppProps): React.JSX.Element {
             ? current.projectConfig
             : result.projectConfig,
         session: result.session ?? current.session,
+        queuedInputs: [...current.queuedInputs, ...(result.queuedInputs ?? [])],
         transcript: [...current.transcript, ...result.entries]
       }));
 

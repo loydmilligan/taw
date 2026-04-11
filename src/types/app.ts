@@ -24,5 +24,12 @@ export interface AppState {
   session: SessionRecord;
   transcript: TranscriptEntry[];
   usage: UsageSnapshot;
+  openrouterAccount: {
+    remainingCredits: number | null;
+    totalCredits: number | null;
+    totalUsage: number | null;
+    lastFetchedAt: string | null;
+    error: string | null;
+  } | null;
   queuedInputs: string[];
 }

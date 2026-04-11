@@ -36,7 +36,7 @@ export const configCommand: CommandDefinition = {
   name: 'config',
   description: 'Show or update provider/model configuration.',
   usage:
-    '/config [show|provider <name>|models [provider]|model <name|index>|api-key <provider> <key>|max-tokens <count>|search <...>|budget <show|high-turn <amount>|high-session <amount>>]',
+    '/config [show|provider <name>|models [provider]|model <name|index>|api-key <provider> <key>|max-tokens <count>|search <...>|budget <show|high-turn <amount>|high-session <amount>|high-prompt <tokens>|high-context <chars>>]',
   async run(input, context) {
     const action = input.args[0] ?? 'show';
 
@@ -57,6 +57,7 @@ export const configCommand: CommandDefinition = {
               `Provider: ${context.providerConfig.provider}`,
               `Model: ${context.providerConfig.model}`,
               `API Key Configured: ${context.providerConfig.apiKey ? 'yes' : 'no'}`,
+              `OpenRouter Management Key Configured: ${process.env.OPENROUTER_MANAGEMENT_KEY ? 'yes' : 'no'}`,
               `Max Completion Tokens: ${context.providerConfig.maxCompletionTokens ?? 'default'}`,
               `SearXNG Enabled: ${searxng.enabled ? 'yes' : 'no'}`,
               `SearXNG Auto-Start: ${searxng.autoStart ? 'yes' : 'no'}`,
@@ -66,6 +67,8 @@ export const configCommand: CommandDefinition = {
               `OpenRouter Search Fallback: ${context.globalConfig.searchBackend.openrouterFallback.enabled ? 'yes' : 'no'}`,
               `High Turn Cost Warning: $${context.globalConfig.budget.highTurnCostWarning.toFixed(4)}`,
               `High Session Cost Warning: $${context.globalConfig.budget.highSessionCostWarning.toFixed(4)}`,
+              `High Prompt Tokens Warning: ${context.globalConfig.budget.highPromptTokensWarning}`,
+              `High Context Chars Warning: ${context.globalConfig.budget.highContextCharsWarning}`,
               `Source Ratings DB: ${context.globalConfig.sourceRatings.dbPath ?? '~/.config/taw/sources.db'}`,
               `Config Scope: ${context.session.storageMode === 'project' ? 'project override available' : 'global only'}`,
               `Writes To: ${location}`
@@ -520,37 +523,59 @@ export const configCommand: CommandDefinition = {
               title: 'Budget Settings',
               body: [
                 `High Turn Cost Warning: $${context.globalConfig.budget.highTurnCostWarning.toFixed(4)}`,
-                `High Session Cost Warning: $${context.globalConfig.budget.highSessionCostWarning.toFixed(4)}`
+                `High Session Cost Warning: $${context.globalConfig.budget.highSessionCostWarning.toFixed(4)}`,
+                `High Prompt Tokens Warning: ${context.globalConfig.budget.highPromptTokensWarning}`,
+                `High Context Chars Warning: ${context.globalConfig.budget.highContextCharsWarning}`
               ].join('\n')
             }
           ]
         };
       }
 
-      if (subaction === 'high-turn' || subaction === 'high-session') {
+      if (
+        subaction === 'high-turn' ||
+        subaction === 'high-session' ||
+        subaction === 'high-prompt' ||
+        subaction === 'high-context'
+      ) {
         const rawValue = input.args[2];
         const value = Number(rawValue);
 
-        if (!rawValue || Number.isNaN(value) || value < 0) {
+        const requiresInteger =
+          subaction === 'high-prompt' || subaction === 'high-context';
+
+        if (
+          !rawValue ||
+          Number.isNaN(value) ||
+          value < 0 ||
+          (requiresInteger && !Number.isInteger(value))
+        ) {
           return {
             entries: [
               {
                 id: createId('config-budget-error'),
                 kind: 'error',
                 title: 'Budget Config Usage',
-                body: `Usage: /config budget ${subaction} <amount>`
+                body: `Usage: /config budget ${subaction} <${requiresInteger ? 'integer' : 'amount'}>`
               }
             ]
           };
         }
 
+        const budgetKey =
+          subaction === 'high-turn'
+            ? 'highTurnCostWarning'
+            : subaction === 'high-session'
+              ? 'highSessionCostWarning'
+              : subaction === 'high-prompt'
+                ? 'highPromptTokensWarning'
+                : 'highContextCharsWarning';
+
         const nextGlobalConfig: GlobalConfig = {
           ...context.globalConfig,
           budget: {
             ...context.globalConfig.budget,
-            [subaction === 'high-turn'
-              ? 'highTurnCostWarning'
-              : 'highSessionCostWarning']: value
+            [budgetKey]: value
           }
         };
         await saveGlobalConfig(nextGlobalConfig);
@@ -562,7 +587,10 @@ export const configCommand: CommandDefinition = {
               id: createId('config-budget'),
               kind: 'notice',
               title: 'Budget Updated',
-              body: `${subaction} warning set to $${value.toFixed(4)}.`
+              body:
+                subaction === 'high-turn' || subaction === 'high-session'
+                  ? `${subaction} warning set to $${value.toFixed(4)}.`
+                  : `${subaction} warning set to ${value}.`
             }
           ]
         };
@@ -574,7 +602,7 @@ export const configCommand: CommandDefinition = {
             id: createId('config-budget-usage'),
             kind: 'error',
             title: 'Budget Config Usage',
-            body: '/config budget <show|high-turn <amount>|high-session <amount>>'
+            body: '/config budget <show|high-turn <amount>|high-session <amount>|high-prompt <tokens>|high-context <chars>>'
           }
         ]
       };
@@ -586,7 +614,7 @@ export const configCommand: CommandDefinition = {
           id: createId('config-usage'),
           kind: 'error',
           title: 'Config Usage',
-          body: '/config [show|provider <name>|models [provider]|model <name|index>|api-key <provider> <key>|max-tokens <count>|search <...>|budget <show|high-turn <amount>|high-session <amount>>]'
+          body: '/config [show|provider <name>|models [provider]|model <name|index>|api-key <provider> <key>|max-tokens <count>|search <...>|budget <show|high-turn <amount>|high-session <amount>|high-prompt <tokens>|high-context <chars>>]'
         }
       ]
     };

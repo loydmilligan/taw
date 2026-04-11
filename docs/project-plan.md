@@ -125,6 +125,7 @@ Delivered MVP:
 - Chromium extension MVP for sending page or selected text into a new research session
 - session-local `sources.json` plus `/sources`
 - `/open-source <index>` tmux side panes with terminal-browser fallback hints
+- `/source-views [index]` for listing and jumping between open source windows
 - `/source-note <index> <note>` for explicit source observations
 - `/search-source <query>` backed by the configured SearXNG search backend
 - `/rate-source <index|url>` backed by a local SourceInfo-derived `sources.db`
@@ -137,8 +138,8 @@ Near-term roadmap:
 - add clearer research-mode affordances for what the user can do next in each
   state, especially after opening source panes
 - add source workspace management, likely via named tmux windows rather than
-  disposable side panes: list open source views, jump back to an existing source,
-  and avoid duplicate panes/windows for the same source
+  disposable side panes: extend the current list/jump flow and avoid duplicate
+  panes/windows for the same source
 - add optional source rating annotations to `/sources`
 - add high-token warnings and context-size hints when source-heavy research
   starts to get expensive

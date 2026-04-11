@@ -17,6 +17,7 @@ export interface CommandResult {
   session?: SessionRecord;
   mode?: string;
   phase?: 'idle' | 'thinking' | 'draft-ready';
+  queuedInputs?: string[];
   providerConfig?: ProviderConfig;
   globalConfig?: GlobalConfig;
   projectConfig?: ProjectConfig | null;

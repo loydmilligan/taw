@@ -208,4 +208,67 @@ describe('config command', () => {
     );
     expect(saved).toContain('"highTurnCostWarning": 0.02');
   });
+
+  it('stores prompt-token and context warning thresholds in global config', async () => {
+    tempDir = await mkdtemp(path.join(os.tmpdir(), 'taw-config-command-'));
+    process.env.HOME = tempDir;
+    const cwd = path.join(tempDir, 'project');
+    await mkdir(path.join(cwd, '.ai'), { recursive: true });
+    await writeFile(
+      path.join(cwd, '.ai', 'config.json'),
+      JSON.stringify({ projectName: 'project' })
+    );
+    const session = await createSession({ cwd });
+
+    await configCommand.run(
+      {
+        name: 'config',
+        args: ['budget', 'high-prompt', '8000'],
+        raw: '/config budget high-prompt 8000'
+      },
+      {
+        cwd,
+        session,
+        transcript: [],
+        providerConfig: { provider: 'openrouter', model: 'openrouter/auto' },
+        mode: 'General',
+        globalConfig: {
+          ...globalConfigSchema.parse({}),
+          providers: { openrouter: {}, openai: {}, anthropic: {} }
+        },
+        projectConfig: null
+      }
+    );
+
+    await configCommand.run(
+      {
+        name: 'config',
+        args: ['budget', 'high-context', '40000'],
+        raw: '/config budget high-context 40000'
+      },
+      {
+        cwd,
+        session,
+        transcript: [],
+        providerConfig: { provider: 'openrouter', model: 'openrouter/auto' },
+        mode: 'General',
+        globalConfig: {
+          ...globalConfigSchema.parse({
+            budget: {
+              highPromptTokensWarning: 8000
+            }
+          }),
+          providers: { openrouter: {}, openai: {}, anthropic: {} }
+        },
+        projectConfig: null
+      }
+    );
+
+    const saved = await readFile(
+      path.join(tempDir, '.config', 'taw', 'config.json'),
+      'utf8'
+    );
+    expect(saved).toContain('"highPromptTokensWarning": 8000');
+    expect(saved).toContain('"highContextCharsWarning": 40000');
+  });
 });

@@ -7,6 +7,7 @@ import { summarizeSessionUsage } from '../core/telemetry/derivation.js';
 import { readTelemetrySummaries } from '../core/telemetry/store.js';
 import { addBrowserPayloadAsSource } from '../core/research/store.js';
 import type { BrowserResearchPayload } from '../core/research/types.js';
+import { fetchOpenRouterCredits } from '../services/openrouter/management.js';
 import { createId } from '../utils/ids.js';
 
 export interface BootstrapOptions {
@@ -32,6 +33,11 @@ export async function bootstrapApp(
   const browserState = options.browserPayload
     ? await buildBrowserSeedState(session, options.browserPayload)
     : null;
+  const openrouterAccount =
+    config.providerConfig.provider === 'openrouter' &&
+    config.openrouterManagementKey
+      ? await loadOpenRouterAccountSnapshot(config.openrouterManagementKey)
+      : null;
 
   return {
     mode: browserState?.mode ?? 'General',
@@ -53,8 +59,37 @@ export async function bootstrapApp(
       session: summarizeSessionUsage(summaries),
       lastRequest: summaries.at(-1) ?? null
     },
+    openrouterAccount,
     queuedInputs: browserState?.queuedInputs ?? []
   };
+}
+
+async function loadOpenRouterAccountSnapshot(managementKey: string): Promise<{
+  remainingCredits: number | null;
+  totalCredits: number | null;
+  totalUsage: number | null;
+  lastFetchedAt: string | null;
+  error: string | null;
+}> {
+  try {
+    const credits = await fetchOpenRouterCredits(managementKey);
+    return {
+      remainingCredits: credits.remainingCredits,
+      totalCredits: credits.totalCredits,
+      totalUsage: credits.totalUsage,
+      lastFetchedAt: new Date().toISOString(),
+      error: null
+    };
+  } catch (error) {
+    return {
+      remainingCredits: null,
+      totalCredits: null,
+      totalUsage: null,
+      lastFetchedAt: new Date().toISOString(),
+      error:
+        error instanceof Error ? error.message : 'Unknown credits fetch error.'
+    };
+  }
 }
 
 function createInitialTranscript(

@@ -6,6 +6,9 @@ import { createSession } from '../src/core/sessions/session-manager.js';
 import {
   addBrowserPayloadAsSource,
   readResearchSources,
+  readResearchSourceViews,
+  removeResearchSourceView,
+  upsertResearchSourceView,
   updateResearchSource
 } from '../src/core/research/store.js';
 import { extractRootDomain } from '../src/core/research/source-rating.js';
@@ -95,5 +98,33 @@ describe('research store', () => {
     expect(extractRootDomain('https://www.bbc.co.uk/news/story')).toBe(
       'bbc.co.uk'
     );
+  });
+
+  it('stores managed source views per session', async () => {
+    tempDir = await mkdtemp(path.join(os.tmpdir(), 'taw-research-store-'));
+    process.env.HOME = tempDir;
+    const cwd = path.join(tempDir, 'project');
+    await mkdir(path.join(cwd, '.ai'), { recursive: true });
+    await writeFile(
+      path.join(cwd, '.ai', 'config.json'),
+      JSON.stringify({ projectName: 'project' })
+    );
+    const session = await createSession({ cwd });
+
+    await upsertResearchSourceView(session, {
+      sourceId: 'source-1',
+      sourceIndex: 1,
+      title: 'Example Story',
+      tmuxWindowId: '@1',
+      tmuxWindowName: 'src 1: Example Story',
+      openedAt: '2026-04-10T00:00:00.000Z',
+      lastOpenedAt: '2026-04-10T00:01:00.000Z'
+    });
+
+    expect(await readResearchSourceViews(session)).toHaveLength(1);
+
+    await removeResearchSourceView(session, 'source-1');
+
+    expect(await readResearchSourceViews(session)).toHaveLength(0);
   });
 });
