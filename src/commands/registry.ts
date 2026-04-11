@@ -11,6 +11,7 @@ import { ideasCommand } from './ideas.js';
 import { initCommand } from './init.js';
 import { issuesCommand } from './issues.js';
 import { openSourceCommand, sourceViewsCommand } from './open-source.js';
+import { openRouterKeyCommand } from './or-key.js';
 import { rateSourceCommand } from './rate-source.js';
 import { researchCommand } from './research.js';
 import { searchSourceCommand } from './search-source.js';
@@ -29,6 +30,7 @@ const coreCommands: CommandDefinition[] = [
   sourcesCommand,
   openSourceCommand,
   sourceViewsCommand,
+  openRouterKeyCommand,
   sourceNoteCommand,
   searchSourceCommand,
   rateSourceCommand,

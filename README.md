@@ -74,6 +74,7 @@ A minimal Chromium extension MVP lives in [browser-extension/README.md](browser-
 - `/source-note <index> <note>`
 - `/search-source <query>`
 - `/rate-source <index|url>`
+- `/or-key <setup|list|status|credits|rotate|disable|enable>`
 - `/attach-dir <path>`
 - `/capture-idea <summary> [note]`
 - `/capture-issue <summary> [note]`

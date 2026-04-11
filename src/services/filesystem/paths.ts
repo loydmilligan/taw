@@ -40,3 +40,7 @@ export function getLogsDir(): string {
 export function getCacheDir(): string {
   return path.join(getAppConfigDir(), 'cache');
 }
+
+export function getOpenRouterKeysRegistryPath(): string {
+  return path.join(getAppConfigDir(), 'openrouter-keys.json');
+}

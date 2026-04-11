@@ -5,7 +5,13 @@ import prettier from 'eslint-config-prettier';
 
 export default [
   {
-    ignores: ['dist/**', 'node_modules/**', '.ai/**', 'vitest.config.ts']
+    ignores: [
+      'dist/**',
+      'node_modules/**',
+      '.ai/**',
+      'vitest.config.ts',
+      'scripts/openrouter-taw-service.ts'
+    ]
   },
   js.configs.recommended,
   {

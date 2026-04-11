@@ -25,18 +25,41 @@ export async function saveProviderApiKeyToGlobalEnv(
   provider: ProviderConfig['provider'],
   apiKey: string
 ): Promise<void> {
-  const envPath = getGlobalEnvPath();
+  await saveEnvVar(getGlobalEnvPath(), PROVIDER_ENV_KEYS[provider], apiKey);
+  process.env[PROVIDER_ENV_KEYS[provider]] = apiKey;
+}
+
+export async function saveEnvVar(
+  envPath: string,
+  key: string,
+  value: string
+): Promise<void> {
   await mkdir(path.dirname(envPath), { recursive: true });
 
   const existing = await readOptionalFile(envPath);
-  const next = upsertEnvVar(
-    existing ?? '',
-    PROVIDER_ENV_KEYS[provider],
-    apiKey
-  );
+  const next = upsertEnvVar(existing ?? '', key, value);
 
   await writeFile(envPath, next, 'utf8');
-  process.env[PROVIDER_ENV_KEYS[provider]] = apiKey;
+}
+
+export async function readEnvVar(
+  envPath: string,
+  key: string
+): Promise<string | null> {
+  const content = await readOptionalFile(envPath);
+
+  if (!content) {
+    return null;
+  }
+
+  for (const line of content.split(/\r?\n/)) {
+    const parsed = parseEnvLine(line);
+    if (parsed?.key === key) {
+      return parsed.value;
+    }
+  }
+
+  return null;
 }
 
 async function loadEnvFile(filePath: string): Promise<void> {
