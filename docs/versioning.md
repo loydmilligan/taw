@@ -1,6 +1,6 @@
 # Versioning
 
-Applies to baseline `0.1.0-beta.3`.
+Applies to baseline `0.1.0-beta.4`.
 
 ## Scope
 
@@ -11,6 +11,9 @@ TAW uses repository-level versioning for code and key documents.
 - The repository version starts in `package.json`.
 - Release tags should follow Semantic Versioning.
 - Human-readable release history belongs in `CHANGELOG.md`.
+- If the repository has moved past the latest tag, keep the current work folded
+  into the active version entry until the next cut or use an `Unreleased`
+  section deliberately.
 
 ## Document versioning policy
 
@@ -39,4 +42,4 @@ For each release or beta cut:
 
 ## Current baseline
 
-- Current documented baseline: `0.1.0-beta.3`
+- Current documented baseline: `0.1.0-beta.4`

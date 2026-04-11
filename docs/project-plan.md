@@ -1,6 +1,6 @@
 # Project Plan
 
-Applies to baseline `0.1.0-beta.3`.
+Applies to baseline `0.1.0-beta.4`.
 
 ## Roadmap status
 
@@ -130,25 +130,24 @@ Delivered MVP:
 - `/search-source <query>` backed by the configured SearXNG search backend
 - `/rate-source <index|url>` backed by a local SourceInfo-derived `sources.db`
 - research `/finalize` dossier output with latest draft, saved sources, and notes
-- high-cost warning display in the footer and `/session-usage`
+- high-cost, prompt-token, prompt-context, and source-count warning display in the footer and `/session-usage`
 - tmux research harness with automatic cleanup by default
+- managed source-window reuse via `/open-source <index>` plus `/source-views [index]`
+- OpenRouter management-key credit snapshot plus `/or-key` app-key lifecycle commands
 
 Near-term roadmap:
 
 - add clearer research-mode affordances for what the user can do next in each
   state, especially after opening source panes
-- add source workspace management, likely via named tmux windows rather than
-  disposable side panes: extend the current list/jump flow and avoid duplicate
-  panes/windows for the same source
 - add optional source rating annotations to `/sources`
-- add high-token warnings and context-size hints when source-heavy research
-  starts to get expensive
 - add adaptive model policy options: use cheaper models after recent spend
   crosses a configured threshold, and allow explicit user override when quality
   matters more than cost
 - add lightweight model feedback at session end, such as quick rating of the
   model used, so TAW can eventually recommend favorite models by task type and
   cost/quality tradeoff
+- add an interactive `/or-key` wizard instead of the current guided command
+  form
 
 ## Current release goals
 
@@ -158,6 +157,8 @@ Near-term roadmap:
 - make manual verification repeatable for another person
 - harden the implemented research/browser/source-rating MVP before adding
   adaptive model routing or durable research memory
+- keep the OpenRouter key-management workflow reliable before adding more
+  account-admin features
 
 ## Release checklist
 

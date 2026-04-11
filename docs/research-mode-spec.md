@@ -1,6 +1,6 @@
 # Research Mode Spec
 
-Applies to baseline `0.1.0-beta.3`.
+Applies to baseline `0.1.0-beta.4`.
 
 ## Goal
 
@@ -213,8 +213,9 @@ Implemented:
 - `/search-source <query>`
 - `/rate-source <index|url>`
 - SourceInfo-derived `sources.db` lookup from `~/.config/taw/sources.db` by default
-- high-cost warnings for last-turn and session spend
+- high-cost, high-token, and high-context warnings in the footer and `/session-usage`
 - research `/finalize` dossier output that includes the latest draft, saved sources, and session notes
+- OpenRouter management-key credit snapshot plus `/or-key` commands for app-key management
 
 Remaining:
 
@@ -224,7 +225,6 @@ Remaining:
 - richer fetch and extraction paths
 - source rating annotations in `/sources`
 - richer managed source views or source tabs beyond the current list/jump flow
-- high-token/context-size warnings
 - adaptive model policy
 
 ## Source Rating Plan
@@ -282,8 +282,6 @@ Implemented behavior:
 
 Remaining near-term behavior:
 
-- warn when a turn crosses prompt-token or completion-token thresholds
-- show source count and context-size hints when a session has many stored sources
 - avoid injecting full source bodies by default; keep source metadata and
   selected snippets separate from full snapshots
 
@@ -299,7 +297,7 @@ Adaptive model behavior:
 Implementation order:
 
 1. improve display of existing telemetry in the header/footer and `/session-usage` - implemented
-2. add configurable warnings without changing model selection - implemented for dollar-cost warnings
+2. add configurable warnings without changing model selection - implemented for dollar-cost, prompt-token, and context-size warnings
 3. add manual budget/model tier selection
 4. add adaptive selection only after warnings and manual controls are reliable
 5. add quick model rating capture after `/finalize`, `/exit`, or session summary
@@ -324,10 +322,8 @@ Implemented minimum behavior:
 
 Preferred later behavior:
 
-- name source views from the source title when they become managed windows
-- keep open sources in named tmux windows and track them in session state
-- make `/open-source <index>` jump to the existing view when one is already open
-- extend `/source-views` or fold more open-view state into `/sources`
+- extend the current named tmux-window flow with richer tab state
+- keep more reviewed/useful/dubious state in source views and `/sources`
 - allow a source view to be marked reviewed, useful, dubious, or ignored
 
 ## Non-goals for MVP

@@ -1,6 +1,6 @@
 # Browser Bridge Spec
 
-Applies to baseline `0.1.0-beta.3`.
+Applies to baseline `0.1.0-beta.4`.
 
 ## Goal
 
@@ -143,7 +143,8 @@ The bridge should not guess aggressively. The extension popup should let the use
 
 ## Tmux integration
 
-TAW supports side-pane source viewing without building a terminal browser inside the app.
+TAW supports tmux-backed source viewing without building a terminal browser
+inside the app.
 
 Command:
 
@@ -151,7 +152,7 @@ Command:
 
 Current behavior:
 
-- if running inside tmux, open a split pane
+- if running inside tmux, open or reuse a managed tmux window for the source
 - prefer opening the saved source snapshot file
 - if no snapshot exists, optionally open the live URL in a terminal browser
 - show basic terminal-browser usage hints

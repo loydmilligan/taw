@@ -1,6 +1,6 @@
 # Source Rating Database Setup
 
-Applies to baseline `0.1.0-beta.3`.
+Applies to baseline `0.1.0-beta.4`.
 
 TAW's `/rate-source <index|url>` command reads a local SQLite database derived
 from the SourceInfo project. The default path is:
@@ -45,7 +45,7 @@ mkdir -p ~/.config/taw
 cp ~/Projects/sourceinfo-repo/data/sources.db ~/.config/taw/sources.db
 ```
 
-The rebuilt database used for `0.1.0-beta.3` contains 222 sources.
+The rebuilt database used for `0.1.0-beta.4` contains 222 sources.
 
 ## TAW Lookup Behavior
 

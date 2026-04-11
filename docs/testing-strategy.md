@@ -1,6 +1,6 @@
 # Testing Strategy
 
-Applies to baseline `0.1.0-beta.3`.
+Applies to baseline `0.1.0-beta.4`.
 
 ## Testing philosophy
 

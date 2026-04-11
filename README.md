@@ -2,7 +2,7 @@
 
 TAW is a terminal-native, chat-first AI workspace for planning, brainstorming, workflow design, workflow review, and markdown artifact generation. It is intentionally not a coding agent.
 
-Current baseline: `0.1.0-beta.3`
+Current baseline: `0.1.0-beta.4`
 
 Structured modes now use a draft-first workflow:
 
@@ -19,6 +19,8 @@ Structured modes now use a draft-first workflow:
   - `OPENROUTER_API_KEY` for the default OpenRouter path
   - `OPENAI_API_KEY` for OpenAI-compatible mode
   - `ANTHROPIC_API_KEY` for Anthropic mode
+- `OPENROUTER_MANAGEMENT_KEY` if you want OpenRouter credit checks and `/or-key`
+  management
 - Node 22+ is recommended for `/rate-source`, which currently uses Node's
   experimental `node:sqlite` module.
 
@@ -146,6 +148,15 @@ Useful search config examples:
 /config budget high-session 0.25
 /config budget high-prompt 12000
 /config budget high-context 50000
+```
+
+Managed OpenRouter app-key example:
+
+```text
+/or-key setup "SRMPW" "~/Projects/SRMPW/.env" OPENROUTER_API_KEY 5 monthly
+/or-key status SRMPW
+/or-key credits SRMPW
+/or-key rotate SRMPW
 ```
 
 Source rating data is read from `~/.config/taw/sources.db` by default. You can

@@ -1,6 +1,6 @@
 # Memory Model Spec
 
-Applies to baseline `0.1.0-beta.3`.
+Applies to baseline `0.1.0-beta.4`.
 
 ## Goal
 

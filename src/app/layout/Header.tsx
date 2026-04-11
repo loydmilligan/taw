@@ -22,7 +22,7 @@ export function Header({ state }: HeaderProps): React.JSX.Element {
   return (
     <Box flexDirection="column" marginBottom={1}>
       <Box justifyContent="space-between">
-        <Text color={theme.accent}>TAW 0.1.0-beta.3</Text>
+        <Text color={theme.accent}>TAW 0.1.0-beta.4</Text>
         <Text color={theme.muted}>{state.session.metadata.slug}</Text>
       </Box>
       <Box justifyContent="space-between">

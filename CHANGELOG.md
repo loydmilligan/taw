@@ -4,6 +4,31 @@ All notable changes to this project should be documented in this file.
 
 The format is based on Keep a Changelog and the project uses Semantic Versioning for release tags.
 
+## [0.1.0-beta.4] - 2026-04-10
+
+### Added
+
+- `/source-views`, `/finalize-gen`, and `/or-key` commands for managed source windows, draft generation on finalize, and OpenRouter app-key lifecycle work.
+- OpenRouter management-key support for showing account credits in the header.
+- Local registry tracking for managed OpenRouter app keys written into external `.env` files.
+
+### Changed
+
+- Moved copied OpenRouter reference snapshots out of the live docs set into `docs/archive/openrouter-reference/`.
+- Local tool binaries under `bin/` are now ignored as workspace artifacts.
+- Bumped the documented release baseline to `0.1.0-beta.4`.
+
+### Fixed
+
+- `/open-source` now reuses existing managed source views instead of opening duplicates.
+- OpenRouter streaming usage is now captured directly for cost and token telemetry even when generation metadata fetch fails.
+- `/finalize` now reports when research mode has no completed draft and points the user to `/finalize-gen`.
+- ESLint no longer fails on the sample `scripts/openrouter-taw-service.ts` file.
+
+### Notes
+
+- `/rate-source` currently uses Node's experimental `node:sqlite` module. It works on the local Node 22 runtime used for verification; older Node 20 installs may need a future fallback.
+
 ## [0.1.0-beta.3] - 2026-04-10
 
 ### Added

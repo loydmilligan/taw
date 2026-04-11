@@ -1,6 +1,6 @@
 # Tasks
 
-Applies to baseline `0.1.0-beta.3`.
+Applies to baseline `0.1.0-beta.4`.
 
 ## Milestone 0 - Bootstrap
 
@@ -135,13 +135,14 @@ Notes:
 - [x] Add deterministic `/search-source <query>` for adding search results to `sources.json`
 - [x] Add `/rate-source <index|url>` using a static SourceInfo-derived SQLite database as a first pass
 - [x] Add cost warnings for high-turn and high-session spend
+- [x] Add prompt-token and context-size warnings alongside dollar-cost warnings
+- [x] Add OpenRouter management-key credits display and `/or-key` app-key management commands
 - [ ] Add persistent interest and watchlist memory files
 - [ ] Add explicit memory commands for interests, ideas, and repos
 - [ ] Add manual QA coverage for browser-to-terminal workflows
 - [ ] Extend managed source views with richer tab state, reviewed markers, and closing/cleanup controls
 - [ ] Add richer research `/finalize` synthesis across the full transcript, not only the latest draft plus stored notes
 - [ ] Add optional rating annotations directly to `/sources`
-- [ ] Add high-token warnings alongside the implemented dollar-cost warnings
 - [ ] Add adaptive model policy controls for budget-sensitive model selection
 - [ ] Add end-of-session model rating capture so model recommendations can learn user preferences
 
