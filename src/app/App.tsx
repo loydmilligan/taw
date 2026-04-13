@@ -46,6 +46,10 @@ export function App({ state }: AppProps): React.JSX.Element {
   const [showStreamingDraft, setShowStreamingDraft] = React.useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = React.useState(false);
   const [selectedPaletteIndex, setSelectedPaletteIndex] = React.useState(0);
+  const [commandPaletteQuery, setCommandPaletteQuery] = React.useState('');
+  const [historyIndex, setHistoryIndex] = React.useState<number | null>(null);
+  const [historyDraft, setHistoryDraft] = React.useState('');
+  const [inputHistory, setInputHistory] = React.useState<string[]>([]);
   const inputRef = React.useRef(inputState);
   const appStateRef = React.useRef(appState);
   const streamAbortRef = React.useRef<AbortController | null>(null);
@@ -57,6 +61,10 @@ export function App({ state }: AppProps): React.JSX.Element {
   const suggestions = React.useMemo(
     () => getSuggestions(inputState.value),
     [inputState.value]
+  );
+  const paletteItems = React.useMemo(
+    () => getPaletteItems(appState.isStreaming, commandPaletteQuery),
+    [appState.isStreaming, commandPaletteQuery]
   );
 
   React.useEffect(() => {
@@ -77,7 +85,10 @@ export function App({ state }: AppProps): React.JSX.Element {
   );
 
   useInput((value, key) => {
-    if (key.ctrl && value.toLowerCase() === 'p') {
+    if (
+      key.ctrl &&
+      (value.toLowerCase() === 'p' || value.toLowerCase() === 'l')
+    ) {
       setCommandPaletteOpen((current) => !current);
       return;
     }
@@ -100,21 +111,17 @@ export function App({ state }: AppProps): React.JSX.Element {
       }
 
       if (key.upArrow) {
-        setSelectedPaletteIndex(
-          (current) =>
-            (current -
-              1 +
-              getPaletteItems(appStateRef.current.isStreaming).length) %
-            getPaletteItems(appStateRef.current.isStreaming).length
+        setSelectedPaletteIndex((current) =>
+          paletteItems.length === 0
+            ? 0
+            : (current - 1 + paletteItems.length) % paletteItems.length
         );
         return;
       }
 
       if (key.downArrow) {
-        setSelectedPaletteIndex(
-          (current) =>
-            (current + 1) %
-            getPaletteItems(appStateRef.current.isStreaming).length
+        setSelectedPaletteIndex((current) =>
+          paletteItems.length === 0 ? 0 : (current + 1) % paletteItems.length
         );
         return;
       }
@@ -122,6 +129,15 @@ export function App({ state }: AppProps): React.JSX.Element {
       if (key.return) {
         void runPaletteAction();
         return;
+      }
+
+      if (key.backspace) {
+        setCommandPaletteQuery((current) => current.slice(0, -1));
+        return;
+      }
+
+      if (value) {
+        setCommandPaletteQuery((current) => current + value);
       }
 
       return;
@@ -161,7 +177,12 @@ export function App({ state }: AppProps): React.JSX.Element {
       return;
     }
 
-    if (key.backspace || key.delete) {
+    if (
+      key.backspace ||
+      key.delete ||
+      value === '\u007f' ||
+      value === '\b'
+    ) {
       updateInputState(deleteBackward);
       return;
     }
@@ -188,6 +209,36 @@ export function App({ state }: AppProps): React.JSX.Element {
       return;
     }
 
+    if (key.upArrow) {
+      const current = inputRef.current;
+
+      if (
+        current.value.length === 0 ||
+        current.cursor === 0 ||
+        historyIndex !== null
+      ) {
+        navigateHistory(-1);
+        return;
+      }
+
+      updateInputState(moveCursorToStart);
+      return;
+    }
+
+    if (key.downArrow) {
+      const current = inputRef.current;
+
+      if (historyIndex !== null && current.cursor === current.value.length) {
+        navigateHistory(1);
+        return;
+      }
+
+      if (current.cursor < current.value.length) {
+        updateInputState(moveCursorToEnd);
+      }
+      return;
+    }
+
     if (key.escape) {
       setSelectedSuggestion(0);
       return;
@@ -201,6 +252,10 @@ export function App({ state }: AppProps): React.JSX.Element {
   React.useEffect(() => {
     setSelectedSuggestion(0);
   }, [inputState.value]);
+
+  React.useEffect(() => {
+    setSelectedPaletteIndex(0);
+  }, [commandPaletteQuery]);
 
   React.useEffect(() => {
     if (!commandPaletteOpen) {
@@ -237,6 +292,11 @@ export function App({ state }: AppProps): React.JSX.Element {
     }
 
     setInputState({ value: '', cursor: 0 });
+    setHistoryIndex(null);
+    setHistoryDraft('');
+    setInputHistory((current) =>
+      current.at(-1) === trimmed ? current : [...current, trimmed]
+    );
 
     const userEntry: TranscriptEntry = {
       id: createId('user'),
@@ -403,7 +463,7 @@ export function App({ state }: AppProps): React.JSX.Element {
             ? current.projectConfig
             : result.projectConfig,
         session: result.session ?? current.session,
-        queuedInputs: [...current.queuedInputs, ...(result.queuedInputs ?? [])],
+        queuedInputs: [...(result.queuedInputs ?? []), ...current.queuedInputs],
         transcript: [...current.transcript, ...result.entries]
       }));
 
@@ -476,26 +536,28 @@ export function App({ state }: AppProps): React.JSX.Element {
   }
 
   async function runPaletteAction(): Promise<void> {
-    const item = getPaletteItems(appStateRef.current.isStreaming)[
-      selectedPaletteIndex
-    ];
+    const item = getPaletteItems(appStateRef.current.isStreaming, '')[0];
 
-    if (!item || item.disabled) {
+    const selectedItem = paletteItems[selectedPaletteIndex];
+
+    const itemToRun = selectedItem ?? item;
+
+    if (!itemToRun || itemToRun.disabled) {
       return;
     }
 
-    if (item.label === 'Resume / Close Menu') {
+    if (itemToRun.label === 'Resume / Close Menu') {
       setCommandPaletteOpen(false);
       return;
     }
 
-    if (item.label === 'Interrupt Current Response') {
+    if (itemToRun.label === 'Interrupt Current Response') {
       streamAbortRef.current?.abort();
       setCommandPaletteOpen(false);
       return;
     }
 
-    if (item.label === 'Summarize Session So Far') {
+    if (itemToRun.label === 'Summarize Session So Far') {
       setCommandPaletteOpen(false);
       setAppState((current) => ({
         ...current,
@@ -512,7 +574,7 @@ export function App({ state }: AppProps): React.JSX.Element {
       return;
     }
 
-    if (item.label === 'Start New Session Here') {
+    if (itemToRun.label === 'Start New Session Here') {
       const nextState = await bootstrapApp(workingDirectory);
       setAppState(nextState);
       setInputState({ value: '', cursor: 0 });
@@ -526,7 +588,7 @@ export function App({ state }: AppProps): React.JSX.Element {
       return;
     }
 
-    if (item.label === 'Toggle Live Draft View') {
+    if (itemToRun.label === 'Toggle Live Draft View') {
       setShowStreamingDraft((current) => {
         const next = !current;
         if (next) {
@@ -538,7 +600,14 @@ export function App({ state }: AppProps): React.JSX.Element {
       return;
     }
 
-    if (item.label === 'Exit TAW (Session Stays Saved)') {
+    if (itemToRun.label.startsWith('/')) {
+      const nextValue = `${itemToRun.label} `;
+      setInputState({ value: nextValue, cursor: nextValue.length });
+      setCommandPaletteOpen(false);
+      return;
+    }
+
+    if (itemToRun.label === 'Exit TAW (Session Stays Saved)') {
       exit();
     }
   }
@@ -549,10 +618,45 @@ export function App({ state }: AppProps): React.JSX.Element {
     setInputState((current) => updater(current));
   }
 
+  function navigateHistory(direction: -1 | 1): void {
+    if (inputHistory.length === 0) {
+      return;
+    }
+
+    if (direction === -1) {
+      if (historyIndex === null) {
+        setHistoryDraft(inputRef.current.value);
+        const nextValue = inputHistory.at(-1) ?? '';
+        setHistoryIndex(inputHistory.length - 1);
+        setInputState({ value: nextValue, cursor: nextValue.length });
+        return;
+      }
+
+      const nextIndex = Math.max(0, historyIndex - 1);
+      const nextValue = inputHistory[nextIndex] ?? '';
+      setHistoryIndex(nextIndex);
+      setInputState({ value: nextValue, cursor: nextValue.length });
+      return;
+    }
+
+    if (historyIndex === null) {
+      return;
+    }
+
+    if (historyIndex >= inputHistory.length - 1) {
+      setHistoryIndex(null);
+      setInputState({ value: historyDraft, cursor: historyDraft.length });
+      return;
+    }
+
+    const nextIndex = historyIndex + 1;
+    const nextValue = inputHistory[nextIndex] ?? '';
+    setHistoryIndex(nextIndex);
+    setInputState({ value: nextValue, cursor: nextValue.length });
+  }
+
   const displayValue = toDisplayValue(inputState.value);
   const displayCursor = toDisplayCursor(inputState.value, inputState.cursor);
-  const paletteItems = getPaletteItems(appState.isStreaming);
-
   return (
     <Box flexDirection="column" paddingX={1} paddingY={1}>
       <Header state={appState} />
@@ -565,12 +669,7 @@ export function App({ state }: AppProps): React.JSX.Element {
         <CommandPalette
           items={paletteItems}
           selectedIndex={selectedPaletteIndex}
-          mode={appState.mode}
-          phase={appState.phase}
-          streaming={appState.isStreaming}
-          artifacts={appState.session.metadata.artifacts.map(
-            (artifact) => artifact.path
-          )}
+          query={commandPaletteQuery}
         />
       ) : null}
       <InputBar
@@ -599,15 +698,30 @@ function getSuggestions(
 
   const query = value.slice(1).trim();
   return commandRegistry
-    .filter((command) => command.name.startsWith(query))
+    .filter((command) =>
+      query.length === 0
+        ? true
+        : command.name.startsWith(query) ||
+          command.description.toLowerCase().includes(query.toLowerCase())
+    )
+    .sort((left, right) => left.name.localeCompare(right.name))
     .map((command) => ({
       name: command.name,
       description: command.description
     }));
 }
 
-function getPaletteItems(streaming: boolean): CommandPaletteItem[] {
-  return [
+function getPaletteItems(
+  streaming: boolean,
+  query: string
+): CommandPaletteItem[] {
+  const commandItems = commandRegistry.map((command) => ({
+    label: `/${command.name}`,
+    description: command.description,
+    usage: command.usage
+  }));
+
+  const actionItems: CommandPaletteItem[] = [
     {
       label: 'Resume / Close Menu',
       description: 'Return to the transcript and input.'
@@ -636,4 +750,19 @@ function getPaletteItems(streaming: boolean): CommandPaletteItem[] {
       description: 'Leave the app. Session files remain on disk.'
     }
   ];
+
+  const allItems = [...commandItems, ...actionItems];
+  const normalizedQuery = query.trim().toLowerCase();
+
+  const filtered =
+    normalizedQuery.length === 0
+      ? allItems
+      : allItems.filter((item) =>
+          [item.label, item.description, item.usage ?? '']
+            .join(' ')
+            .toLowerCase()
+            .includes(normalizedQuery)
+        );
+
+  return filtered.slice(0, 10);
 }

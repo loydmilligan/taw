@@ -3,11 +3,13 @@ import { readResearchSources } from '../research/store.js';
 import type { SessionRecord } from '../../types/session.js';
 import type { ProjectConfig } from '../../services/config/schema.js';
 import { loadAssistantPromptMaterials } from './assistant-files.js';
+import { parseWikiMode, readWikiFile } from '../../services/wiki/manager.js';
 
 export async function buildPromptContext(
   session: SessionRecord,
   projectConfig: ProjectConfig | null,
-  latestUserInput: string
+  latestUserInput: string,
+  mode?: string
 ): Promise<string> {
   const sections: string[] = [];
   const assistantMaterials = await loadAssistantPromptMaterials(
@@ -126,6 +128,25 @@ export async function buildPromptContext(
     sections.push(
       ['## Session Summary', trimForPrompt(summary, 1200)].join('\n\n')
     );
+  }
+
+  // Wiki context: inject schema + index when in any wiki mode
+  if (mode) {
+    const wikiParsed = parseWikiMode(mode);
+    if (wikiParsed) {
+      const schema = await readWikiFile(wikiParsed.topic, 'schema.md');
+      const index = await readWikiFile(wikiParsed.topic, 'index.md');
+      if (schema) {
+        sections.push(
+          [`## Wiki Schema (${wikiParsed.topic})`, trimForPrompt(schema, 2000)].join('\n\n')
+        );
+      }
+      if (index) {
+        sections.push(
+          [`## Wiki Index (${wikiParsed.topic})`, trimForPrompt(index, 1500)].join('\n\n')
+        );
+      }
+    }
   }
 
   return sections.join('\n\n');

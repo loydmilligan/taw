@@ -5,25 +5,20 @@ import { theme } from '../theme.js';
 export interface CommandPaletteItem {
   label: string;
   description: string;
+  usage?: string;
   disabled?: boolean;
 }
 
 interface CommandPaletteProps {
   items: CommandPaletteItem[];
   selectedIndex: number;
-  mode: string;
-  phase: string;
-  streaming: boolean;
-  artifacts: string[];
+  query: string;
 }
 
 export function CommandPalette({
   items,
   selectedIndex,
-  mode,
-  phase,
-  streaming,
-  artifacts
+  query
 }: CommandPaletteProps): React.JSX.Element {
   return (
     <Box
@@ -34,39 +29,36 @@ export function CommandPalette({
       paddingY={1}
       marginTop={1}
     >
-      <Text color={theme.accent}>Session Menu</Text>
+      <Text color={theme.accent}>Command Palette</Text>
       <Text color={theme.muted}>
-        Mode {mode} Phase {phase} Streaming {streaming ? 'yes' : 'no'}
+        Type to filter. Enter inserts a command. Esc closes. Up/Down move.
       </Text>
-      <Text color={theme.muted}>Enter run Esc close Up/Down move</Text>
+      <Text>
+        <Text color={theme.muted}>Search </Text>
+        <Text inverse>{query || ' '}</Text>
+      </Text>
       <Box flexDirection="column" marginTop={1}>
         {items.map((item, index) => (
-          <Text
-            key={item.label}
-            color={
-              item.disabled
-                ? theme.muted
-                : index === selectedIndex
-                  ? theme.accent
-                  : theme.success
-            }
-          >
-            {index === selectedIndex ? '› ' : '  '}
-            {item.label} {item.description}
-          </Text>
-        ))}
-      </Box>
-      <Box flexDirection="column" marginTop={1}>
-        <Text color={theme.muted}>Artifacts</Text>
-        {artifacts.length > 0 ? (
-          artifacts.slice(-5).map((artifact) => (
-            <Text key={artifact} color={theme.muted}>
-              - {artifact}
+          <Box key={`${item.label}-${index}`} flexDirection="column">
+            <Text
+              color={
+                item.disabled
+                  ? theme.muted
+                  : index === selectedIndex
+                    ? theme.accent
+                    : theme.success
+              }
+            >
+              {index === selectedIndex ? '› ' : '  '}
+              {item.label}
             </Text>
-          ))
-        ) : (
-          <Text color={theme.muted}>- none yet</Text>
-        )}
+            <Text color={theme.muted}>
+              {'   '}
+              {item.description}
+              {item.usage ? `  ${item.usage}` : ''}
+            </Text>
+          </Box>
+        ))}
       </Box>
     </Box>
   );

@@ -202,6 +202,7 @@ export class OpenAiCompatibleProvider implements ProviderAdapter {
 
     return {
       text: extractCompletionText(choice?.message?.content),
+      finishReason: choice?.finish_reason ?? null,
       toolCalls: (choice?.message?.tool_calls ?? [])
         .filter(
           (

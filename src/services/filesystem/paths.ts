@@ -44,3 +44,11 @@ export function getCacheDir(): string {
 export function getOpenRouterKeysRegistryPath(): string {
   return path.join(getAppConfigDir(), 'openrouter-keys.json');
 }
+
+export function getGlobalWikiRoot(): string {
+  return path.join(getAppConfigDir(), 'wiki');
+}
+
+export function getWikiTopicDir(topic: string): string {
+  return path.join(getGlobalWikiRoot(), topic);
+}

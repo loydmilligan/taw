@@ -6,7 +6,7 @@ import { SearxngManager } from '../services/search/searxng-manager.js';
 
 const token = await ensureBridgeToken();
 const port = Number(process.env.TAW_BRIDGE_PORT ?? '4317');
-const host = '127.0.0.1';
+const host = process.env.TAW_BRIDGE_HOST ?? '127.0.0.1';
 const { globalConfig } = await loadConfig(process.cwd());
 const searchBackend = SearxngManager.fromGlobalConfig(globalConfig);
 const server = createBridgeServer({

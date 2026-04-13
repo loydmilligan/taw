@@ -72,6 +72,34 @@ const modeDefinitions: Record<string, ModeDefinition> = {
   }
 };
 
+const wikiModeBase: ModeDefinition = {
+  name: 'Wiki',
+  artifactType: null,
+  artifactTitle: null,
+  activationMessage: 'Wiki mode is active.',
+  researchType: null
+};
+
 export function getModeDefinition(mode: string): ModeDefinition {
+  if (mode.startsWith('Wiki ')) {
+    return { ...wikiModeBase, name: mode };
+  }
   return modeDefinitions[mode] ?? modeDefinitions.General;
+}
+
+export function isWikiMode(mode: string): boolean {
+  return mode.startsWith('Wiki ');
+}
+
+export function isWikiWriteMode(mode: string): boolean {
+  return (
+    mode.startsWith('Wiki Ingest:') ||
+    mode.startsWith('Wiki Query:') ||
+    mode.startsWith('Wiki Lint:') ||
+    mode.startsWith('Wiki Setup:')
+  );
+}
+
+export function isWikiStageMode(mode: string): boolean {
+  return mode.startsWith('Wiki Stage:');
 }

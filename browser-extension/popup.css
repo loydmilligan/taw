@@ -19,6 +19,13 @@ h1 {
   font-size: 16px;
 }
 
+.version {
+  font-size: 11px;
+  font-weight: 400;
+  opacity: 0.5;
+  margin-left: 4px;
+}
+
 h2 {
   margin: 0;
   font-size: 13px;
@@ -45,15 +52,28 @@ button {
   color: inherit;
 }
 
+input[type='checkbox'] {
+  width: auto;
+  margin-right: 8px;
+}
+
 textarea {
   resize: vertical;
 }
 
 .actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 8px;
   margin-top: 12px;
+}
+
+#wikiSection[hidden] {
+  display: none;
+}
+
+#newTopicLabel[hidden] {
+  display: none;
 }
 
 .backend {

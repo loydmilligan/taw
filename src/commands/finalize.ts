@@ -1,6 +1,10 @@
 import { readFile } from 'node:fs/promises';
 import { createModeArtifact } from '../core/artifacts/writer.js';
-import { getModeDefinition } from '../core/modes/definitions.js';
+import {
+  getModeDefinition,
+  isWikiStageMode
+} from '../core/modes/definitions.js';
+import { buildWikiMode, parseWikiMode } from '../services/wiki/manager.js';
 import { readResearchSources } from '../core/research/store.js';
 import { updateSessionMetadata } from '../core/sessions/session-manager.js';
 import { createId } from '../utils/ids.js';
@@ -12,6 +16,29 @@ export const finalizeCommand: CommandDefinition = {
     'Save the latest draft as a mode artifact and return to General mode.',
   usage: '/finalize',
   async run(_input, context) {
+    // Wiki Stage → Wiki Ingest transition
+    if (isWikiStageMode(context.mode)) {
+      const parsed = parseWikiMode(context.mode);
+      if (parsed) {
+        const ingestMode = buildWikiMode('Ingest', parsed.topic);
+        return {
+          mode: ingestMode,
+          phase: 'idle' as const,
+          queuedInputs: [
+            'The plan has been approved. Execute it now using write_wiki_page for each page. Start writing.'
+          ],
+          entries: [
+            {
+              id: createId('wiki-stage-approved'),
+              kind: 'notice',
+              title: 'Wiki Plan Approved',
+              body: `Executing wiki updates for ${parsed.topic}...`
+            }
+          ]
+        };
+      }
+    }
+
     const definition = getModeDefinition(context.mode);
 
     if (!definition.artifactType) {

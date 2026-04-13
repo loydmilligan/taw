@@ -1,5 +1,6 @@
 import type { CommandContext, CommandDefinition } from './types.js';
 import { createId } from '../utils/ids.js';
+import { APP_VERSION } from '../version.js';
 
 export const statusCommand: CommandDefinition = {
   name: 'status',
@@ -15,6 +16,7 @@ export const statusCommand: CommandDefinition = {
           kind: 'notice',
           title: 'Workspace Status',
           body: [
+            `Version: ${APP_VERSION}`,
             `Mode: ${context.mode}`,
             `Storage: ${session.storageMode}`,
             `Session Dir: ${session.sessionDir}`,

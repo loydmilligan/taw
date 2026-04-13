@@ -12,6 +12,7 @@ import { createId } from '../utils/ids.js';
 
 export interface BootstrapOptions {
   browserPayload?: BrowserResearchPayload | null;
+  queuedInputs?: string[];
 }
 
 export async function bootstrapApp(
@@ -60,7 +61,7 @@ export async function bootstrapApp(
       lastRequest: summaries.at(-1) ?? null
     },
     openrouterAccount,
-    queuedInputs: browserState?.queuedInputs ?? []
+    queuedInputs: [...(options.queuedInputs ?? []), ...(browserState?.queuedInputs ?? [])]
   };
 }
 
@@ -153,6 +154,18 @@ async function buildBrowserSeedState(
 }
 
 function buildInitialResearchPrompt(payload: BrowserResearchPayload): string {
+  const hasTranscript =
+    payload.pageTextExcerpt?.startsWith('[TRANSCRIPT]') ?? false;
+
+  const excerptLabel =
+    payload.kind === 'video'
+      ? hasTranscript
+        ? 'Video transcript'
+        : 'YouTube page content (description / page chrome, not a transcript)'
+      : payload.kind === 'repo'
+        ? 'Repository page content (README and description)'
+        : 'Page excerpt';
+
   return [
     payload.initialQuestion
       ? `Initial question: ${payload.initialQuestion}`
@@ -161,7 +174,7 @@ function buildInitialResearchPrompt(payload: BrowserResearchPayload): string {
     payload.url ? `Source url: ${payload.url}` : null,
     payload.selectedText ? `Selected text:\n${payload.selectedText}` : null,
     payload.pageTextExcerpt
-      ? `Page excerpt:\n${payload.pageTextExcerpt}`
+      ? `${excerptLabel}:\n${payload.pageTextExcerpt}`
       : null,
     payload.userNote ? `User note: ${payload.userNote}` : null,
     'Start by using this source as context and produce a draft research response.'

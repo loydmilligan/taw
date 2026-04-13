@@ -8,7 +8,15 @@
   </head>
   <body>
     <main class="app">
-      <h1>TAW Bridge</h1>
+      <h1>TAW Bridge <span id="bridgeVersion" class="version"></span></h1>
+
+      <label>
+        Workflow
+        <select id="workflowType">
+          <option value="research">Research</option>
+          <option value="wiki">Wiki</option>
+        </select>
+      </label>
 
       <label>
         Research Type
@@ -19,6 +27,30 @@
           <option value="video">Video</option>
         </select>
       </label>
+
+      <section id="wikiSection">
+        <label>
+          Wiki Topic
+          <select id="wikiTopic">
+            <option value="">Loading topics…</option>
+          </select>
+        </label>
+
+        <label id="newTopicLabel">
+          New Topic
+          <input id="newWikiTopic" type="text" placeholder="Enter new wiki topic" />
+        </label>
+
+        <label>
+          <input id="wikiAutoIngest" type="checkbox" />
+          Auto-ingest immediately without opening TAW
+        </label>
+
+        <label>
+          <input id="wikiAutoIngestDefault" type="checkbox" />
+          Use auto-ingest as the default for wiki sends
+        </label>
+      </section>
 
       <label>
         Token
@@ -67,8 +99,11 @@
       </label>
 
       <div class="actions">
-        <button id="sendPage" type="button">Send Page</button>
-        <button id="sendSelection" type="button">Send Selection</button>
+        <button id="sendPage" type="button">Send To Research</button>
+        <button id="sendSelection" type="button">Selection To Research</button>
+        <button id="sendWiki" type="button" class="secondary">
+          Send To Wiki
+        </button>
       </div>
 
       <p id="status" class="status" aria-live="polite"></p>

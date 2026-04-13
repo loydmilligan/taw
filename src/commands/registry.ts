@@ -1,12 +1,15 @@
 import { attachDirCommand } from './attach-dir.js';
 import { brainstormCommand } from './brainstorm.js';
+import { cancelCommand } from './cancel.js';
 import { captureIdeaCommand } from './capture-idea.js';
 import { captureIssueCommand } from './capture-issue.js';
+import { confirmCommand } from './confirm.js';
 import { configCommand } from './config.js';
 import { exitCommand } from './exit.js';
 import { exitModeCommand } from './exit-mode.js';
 import { finalizeCommand, finalizeGenerateCommand } from './finalize.js';
 import { createHelpCommand } from './help.js';
+import { histerCommand } from './hister.js';
 import { ideasCommand } from './ideas.js';
 import { initCommand } from './init.js';
 import { issuesCommand } from './issues.js';
@@ -21,12 +24,16 @@ import { statusCommand } from './status.js';
 import { summarizeSessionCommand } from './summarize-session.js';
 import { sessionUsageCommand } from './session-usage.js';
 import { workflowCommand } from './workflow.js';
+import { wikiCommand } from './wiki.js';
 import type { CommandDefinition } from './types.js';
 
 const coreCommands: CommandDefinition[] = [
   brainstormCommand,
+  confirmCommand,
+  cancelCommand,
   researchCommand,
   workflowCommand,
+  histerCommand,
   sourcesCommand,
   openSourceCommand,
   sourceViewsCommand,
@@ -47,7 +54,8 @@ const coreCommands: CommandDefinition[] = [
   initCommand,
   summarizeSessionCommand,
   exitCommand,
-  statusCommand
+  statusCommand,
+  wikiCommand
 ];
 export const commandRegistry: CommandDefinition[] = [...coreCommands];
 

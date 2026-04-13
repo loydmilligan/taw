@@ -8,6 +8,7 @@ import {
   removeResearchSourceView,
   upsertResearchSourceView
 } from '../core/research/store.js';
+import { readPendingWikiIngest } from '../services/wiki/pending-ingest.js';
 import type { ResearchSourceView } from '../core/research/types.js';
 import { createId } from '../utils/ids.js';
 import type { CommandDefinition } from './types.js';
@@ -32,8 +33,9 @@ export const openSourceCommand: CommandDefinition = {
   async run(input, context) {
     const index = Number(input.args[0] ?? '');
     const sources = await readResearchSources(context.session);
+    const pendingWikiIngest = await readPendingWikiIngest(context.session);
 
-    if (!Number.isInteger(index) || index < 1 || index > sources.length) {
+    if (!Number.isInteger(index) || index < 1) {
       return {
         entries: [
           {
@@ -46,9 +48,13 @@ export const openSourceCommand: CommandDefinition = {
       };
     }
 
-    const source = sources[index - 1];
+    const source = sources[index - 1] ?? null;
+    const pendingResult =
+      !source && pendingWikiIngest?.kind === 'hister'
+        ? pendingWikiIngest.results[index - 1] ?? null
+        : null;
 
-    if (!source) {
+    if (!source && !pendingResult) {
       return {
         entries: [
           {
@@ -68,17 +74,24 @@ export const openSourceCommand: CommandDefinition = {
             id: createId('open-source-no-tmux'),
             kind: 'notice',
             title: 'Tmux Not Detected',
-            body: source.snapshotPath
-              ? `Open this snapshot manually:\n${source.snapshotPath}`
-              : source.url
-                ? `No tmux window available. Open this url manually:\n${source.url}`
+            body: source
+              ? source.snapshotPath
+                ? `Open this snapshot manually:\n${source.snapshotPath}`
+                : source.url
+                  ? `No tmux window available. Open this url manually:\n${source.url}`
+                  : 'This source has no snapshot file or URL to open.'
+              : pendingResult
+                ? `No tmux window available. Open this url manually:\n${pendingResult.url}`
                 : 'This source has no snapshot file or URL to open.'
           }
         ]
       };
     }
 
-    const target = await buildOpenTarget(source.snapshotPath, source.url);
+    const target = await buildOpenTarget(
+      source?.snapshotPath ?? null,
+      source?.url ?? pendingResult?.url ?? null
+    );
 
     if (!target) {
       return {
@@ -95,9 +108,9 @@ export const openSourceCommand: CommandDefinition = {
 
     const viewState = await ensureManagedSourceView(
       context.session,
-      source.id,
+      source?.id ?? `pending-wiki-hister:${pendingWikiIngest?.topic ?? 'unknown'}:${index}`,
       index,
-      source.title,
+      source?.title ?? pendingResult?.title ?? `Source ${index}`,
       target
     );
 

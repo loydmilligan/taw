@@ -80,11 +80,38 @@ export const globalConfigSchema = z.object({
       accent: z.string().optional()
     })
     .default({}),
+  ui: z
+    .object({
+      compactMode: z.boolean().default(false),
+      showHeaderDetails: z.boolean().default(true),
+      showUsage: z.boolean().default(true),
+      showHints: z.boolean().default(true),
+      showWarnings: z.boolean().default(true),
+      showResearchStats: z.boolean().default(true)
+    })
+    .default({
+      compactMode: false,
+      showHeaderDetails: true,
+      showUsage: true,
+      showHints: true,
+      showWarnings: true,
+      showResearchStats: true
+    }),
   outputBehavior: z
     .object({
       autoSaveNotes: z.boolean().default(true)
     })
     .default({ autoSaveNotes: true }),
+  hister: z
+    .object({
+      enabled: z.boolean().default(false),
+      baseUrl: z.string().default('http://localhost:4433'),
+      token: z.string().optional()
+    })
+    .default({
+      enabled: false,
+      baseUrl: 'http://localhost:4433'
+    }),
   allowedContextDirs: z.array(z.string()).default([]),
   providers: z
     .object({

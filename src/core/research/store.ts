@@ -4,7 +4,8 @@ import { researchSourceSchema, researchSourceViewSchema } from './schema.js';
 import type {
   BrowserResearchPayload,
   ResearchSource,
-  ResearchSourceView
+  ResearchSourceView,
+  ResearchType
 } from './types.js';
 import type { SessionRecord } from '../../types/session.js';
 import { createId } from '../../utils/ids.js';
@@ -85,6 +86,44 @@ export async function addBrowserPayloadAsSource(
     note: payload.userNote,
     snapshotPath,
     createdAt: payload.sentAt,
+    status: 'new'
+  };
+
+  await appendResearchSource(session, source);
+  return source;
+}
+
+export async function addFetchedSource(
+  session: SessionRecord,
+  input: {
+    title: string;
+    url: string;
+    content: string;
+    researchType: ResearchType;
+    note?: string | null;
+  }
+): Promise<ResearchSource> {
+  const existing = await readResearchSources(session);
+  const existingMatch = existing.find((source) => source.url === input.url);
+
+  if (existingMatch) {
+    return existingMatch;
+  }
+
+  const snapshotPath = await writeSourceSnapshot(session, input.title, input.content);
+  const excerpt = input.content.slice(0, 4000);
+  const source: ResearchSource = {
+    id: createId('source'),
+    researchType: input.researchType,
+    kind: 'article',
+    url: input.url,
+    title: input.title,
+    origin: 'fetch',
+    selectedText: null,
+    excerpt,
+    note: input.note ?? null,
+    snapshotPath,
+    createdAt: new Date().toISOString(),
     status: 'new'
   };
 

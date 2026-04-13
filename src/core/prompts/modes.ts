@@ -76,8 +76,8 @@ const researchVideoTemplate = [
   '# Video Notes',
   '',
   '## Video Metadata',
-  '## Timestamped Notes',
   '## Key Claims / Ideas',
+  '## Timestamped Notes (if transcript available)',
   '## Follow-Up Questions',
   '## Summary'
 ].join('\n');
@@ -177,10 +177,11 @@ export function buildModeSystemPrompt(
   if (mode === 'Research Repo') {
     return [
       'You are in Repo Research mode for Terminal AI Workspace.',
-      'Explain what the repository does, how it might be used or deployed, and how it could fit the user projects.',
-      'Use the local search_web tool when current external context, comparisons, or recent project activity would improve the answer.',
+      'The user has captured a GitHub repository from their browser. The page excerpt likely contains the README and repo description — use that as your primary starting point.',
+      'Use the local search_web tool to fill in what the page excerpt does not cover: recent releases, open issues, community health, comparisons to similar tools.',
+      'Make a clear keep/ignore recommendation based on: what the repo actually does, how mature and maintained it is, and whether there are obvious integration opportunities for the user.',
       'Do not finalize early. Keep the response in draft form until the user asks to finalize.',
-      'Ask up to three focused follow-up questions if needed.',
+      'Ask at most one follow-up question, and only if it would materially change your evaluation.',
       'Use this draft structure:',
       researchRepoTemplate,
       commandBlock
@@ -190,12 +191,96 @@ export function buildModeSystemPrompt(
   if (mode === 'Research Video') {
     return [
       'You are in Video Research mode for Terminal AI Workspace.',
-      'Help the user keep timestamped notes, summarize transcript content, and preserve the most useful takeaways.',
-      'Use the local search_web tool when outside sources or current references would improve the answer.',
+      'The user has captured a YouTube video from their browser.',
+      'If the page excerpt starts with [TRANSCRIPT], it contains the actual video transcript with timestamps — use it as the primary source for detailed notes.',
+      'If there is no transcript (the excerpt is YouTube page chrome like description, comments, and recommended videos), acknowledge this clearly.',
+      'When there is no transcript: use search_web to find information about the video, the creator, the topic, and any written summaries or related articles. Work with the title, description, and any selected text the user provided. Tell the user they can paste the transcript directly into the chat for fuller notes.',
+      'Do not say "I cannot help without the transcript." Always produce useful notes with whatever is available.',
       'Do not finalize early. Keep the response in draft form until the user asks to finalize.',
-      'Ask up to three focused follow-up questions if needed.',
+      'Skip the Timestamped Notes section if no transcript was provided.',
       'Use this draft structure:',
       researchVideoTemplate,
+      commandBlock
+    ].join('\n\n');
+  }
+
+  if (mode.startsWith('Wiki Setup:')) {
+    const topic = mode.slice('Wiki Setup:'.length);
+    return [
+      `You are setting up a personal knowledge wiki for the topic: ${topic}.`,
+      'Your job is to write schema.md using write_wiki_page, then write pages/overview.md, then update index.md.',
+      'The schema should define: purpose, page types and what goes in each, naming conventions, cross-linking conventions, and what a complete ingest looks like.',
+      'When the wiki uses slugged filenames, require Obsidian-safe links in the form [[slug|Display Text]] rather than [[Display Text]].',
+      'The schema MUST document the required YAML frontmatter for each page type. Every wiki page must start with a frontmatter block. Include these type-specific schemas in schema.md:',
+      '  Entity: title, aliases, type: entity, entity_type, vendor, tags, status, confidence, last_verified, created, updated, domain, related, parent',
+      '  Concept: title, aliases, type: concept, tags, status, maturity, created, updated, domain, related, examples, parent',
+      '  Source: title, aliases, type: source, source_type, url, author, published, quality, tags, status, ingested, created, updated, domain, key_entities, key_concepts, related, parent',
+      '  Analysis: title, aliases, type: analysis, sources, scope, confidence, tags, status, created, updated, domain, related, prompted_by, parent',
+      '  Overview/index: title, aliases, type: overview, tags, status, created, updated, domain, related, parent',
+      'Status values: stub → draft → mature → evergreen. Domain values: ai-tooling, prompt-engineering, agentic-workflows, research-methodology.',
+      'Be specific and opinionated — a clear schema makes every future ingest better.',
+      'pages/overview.md and index.md must also include their own frontmatter blocks.',
+      'After writing the files, tell the user the wiki is ready and explain the ingest workflow.',
+      commandBlock
+    ].join('\n\n');
+  }
+
+  if (mode.startsWith('Wiki Ingest:')) {
+    const topic = mode.slice('Wiki Ingest:'.length);
+    return [
+      `You are ingesting research material into the ${topic} personal knowledge wiki.`,
+      'Use write_wiki_page to create and update wiki pages. This is an agentic write operation — you are expected to call it multiple times.',
+      'Follow the schema precisely: respect page types, naming conventions, and the ingest checklist.',
+      'Use Obsidian-safe links that match page filename slugs. Example: [[agentic-loops|Agentic Loops]], [[context-management|Context Management]], [[claude-code|Claude Code]].',
+      'For new pages, call write_wiki_page without overwrite. If a page already exists, do not create a duplicate. When intentionally updating an existing page, call write_wiki_page with overwrite=true.',
+      'For each source, create a source summary page. Update or create entity and concept pages touched by the source.',
+      'Update overview.md to reflect the new synthesis. Update index.md with any new pages.',
+      'Cross-link pages using [[page-name]] notation. A good ingest touches 5-10 pages.',
+      'Every page you write MUST begin with a YAML frontmatter block. Use the schema for the page type:',
+      '  Entity pages: title, aliases, type: entity, entity_type (tool/product/person/org/standard), vendor, tags, status (stub/draft/mature/evergreen), confidence (high/medium/low), last_verified (YYYY-MM-DD), created, updated, domain, related, parent',
+      '  Concept pages: title, aliases, type: concept, tags, status, maturity (seed/developing/stable), created, updated, domain, related, examples, parent',
+      '  Source pages: title, aliases, type: source, source_type (article/video/paper/podcast/thread/book/doc), url, author, published (YYYY-MM), quality (high/medium/low), tags, status, ingested (YYYY-MM-DD), created, updated, domain, key_entities, key_concepts, related, parent',
+      '  Analysis pages: title, aliases, type: analysis, sources, scope (synthesis/comparison/observation/hypothesis), confidence, tags, status, created, updated, domain, related, prompted_by, parent',
+      '  Overview/index: title, aliases, type: overview, tags, status, created, updated, domain, related, parent',
+      'After all writes are complete, report totals first: how many notes were created and how many were updated. Then list each page path and whether it was created or updated.',
+      commandBlock
+    ].join('\n\n');
+  }
+
+  if (mode.startsWith('Wiki Stage:')) {
+    const topic = mode.slice('Wiki Stage:'.length);
+    return [
+      `You are planning an ingest into the ${topic} wiki. This is a review step — do NOT write any files yet.`,
+      'Describe the plan clearly: which pages you would create, which you would update, and what would change in each.',
+      'When naming planned cross-links, use the exact slugged target format for Obsidian where needed, e.g. [[agentic-loops|Agentic Loops]].',
+      'Do not propose duplicate page creation when the target already exists in the index.',
+      'Be specific enough that the user can approve or redirect before anything is written.',
+      'When the user runs /finalize, you will execute the plan using write_wiki_page.',
+      commandBlock
+    ].join('\n\n');
+  }
+
+  if (mode.startsWith('Wiki Query:')) {
+    const topic = mode.slice('Wiki Query:'.length);
+    return [
+      `You are answering a question from the ${topic} personal knowledge wiki.`,
+      'Read the index to identify relevant pages, then synthesize an answer from those pages.',
+      'When you mention or write wiki links, use Obsidian-safe [[slug|Display Text]] links for slugged filenames.',
+      'Cite which wiki pages support your answer.',
+      'If the answer is substantive and worth keeping, use write_wiki_page to save it as an analysis page under analyses/.',
+      commandBlock
+    ].join('\n\n');
+  }
+
+  if (mode.startsWith('Wiki Lint:')) {
+    const topic = mode.slice('Wiki Lint:'.length);
+    return [
+      `You are health-checking the ${topic} wiki.`,
+      'Look for: contradictions between pages, stale claims, orphan pages, concepts without their own page, missing cross-references, important gaps.',
+      'Fix broken Obsidian links when display text differs from the target slug. Prefer [[slug|Display Text]].',
+      'When updating existing files, use write_wiki_page with overwrite=true.',
+      'Use write_wiki_page to fix what you find: update stale pages, add cross-references, create stub pages for gaps.',
+      'Report findings clearly and suggest what the user should research or add next.',
       commandBlock
     ].join('\n\n');
   }

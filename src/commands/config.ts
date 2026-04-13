@@ -36,7 +36,7 @@ export const configCommand: CommandDefinition = {
   name: 'config',
   description: 'Show or update provider/model configuration.',
   usage:
-    '/config [show|provider <name>|models [provider]|model <name|index>|api-key <provider> <key>|max-tokens <count>|search <...>|budget <show|high-turn <amount>|high-session <amount>|high-prompt <tokens>|high-context <chars>>]',
+    '/config [show|provider <name>|models [provider]|model <name|index>|api-key <provider> <key>|max-tokens <count>|search <...>|budget <show|high-turn <amount>|high-session <amount>|high-prompt <tokens>|high-context <chars>>|ui <show|compact <on|off>|header-details <on|off>|usage <on|off>|hints <on|off>|warnings <on|off>|research-stats <on|off>>|hister <show|enabled <on|off>|url <url>|token <token>>]',
   async run(input, context) {
     const action = input.args[0] ?? 'show';
 
@@ -69,7 +69,15 @@ export const configCommand: CommandDefinition = {
               `High Session Cost Warning: $${context.globalConfig.budget.highSessionCostWarning.toFixed(4)}`,
               `High Prompt Tokens Warning: ${context.globalConfig.budget.highPromptTokensWarning}`,
               `High Context Chars Warning: ${context.globalConfig.budget.highContextCharsWarning}`,
+              `UI Compact Mode: ${context.globalConfig.ui.compactMode ? 'on' : 'off'}`,
+              `UI Header Details: ${context.globalConfig.ui.showHeaderDetails ? 'on' : 'off'}`,
+              `UI Usage: ${context.globalConfig.ui.showUsage ? 'on' : 'off'}`,
+              `UI Hints: ${context.globalConfig.ui.showHints ? 'on' : 'off'}`,
+              `UI Warnings: ${context.globalConfig.ui.showWarnings ? 'on' : 'off'}`,
+              `UI Research Stats: ${context.globalConfig.ui.showResearchStats ? 'on' : 'off'}`,
               `Source Ratings DB: ${context.globalConfig.sourceRatings.dbPath ?? '~/.config/taw/sources.db'}`,
+              `Hister Enabled: ${context.globalConfig.hister.enabled ? 'yes' : 'no'}`,
+              `Hister URL: ${context.globalConfig.hister.baseUrl}`,
               `Config Scope: ${context.session.storageMode === 'project' ? 'project override available' : 'global only'}`,
               `Writes To: ${location}`
             ].join('\n')
@@ -608,13 +616,195 @@ export const configCommand: CommandDefinition = {
       };
     }
 
+    if (action === 'ui') {
+      const subaction = input.args[1] ?? 'show';
+
+      if (subaction === 'show') {
+        return {
+          entries: [
+            {
+              id: createId('config-ui-show'),
+              kind: 'notice',
+              title: 'UI Settings',
+              body: [
+                `Compact Mode: ${context.globalConfig.ui.compactMode ? 'on' : 'off'}`,
+                `Header Details: ${context.globalConfig.ui.showHeaderDetails ? 'on' : 'off'}`,
+                `Usage: ${context.globalConfig.ui.showUsage ? 'on' : 'off'}`,
+                `Hints: ${context.globalConfig.ui.showHints ? 'on' : 'off'}`,
+                `Warnings: ${context.globalConfig.ui.showWarnings ? 'on' : 'off'}`,
+                `Research Stats: ${context.globalConfig.ui.showResearchStats ? 'on' : 'off'}`
+              ].join('\n')
+            }
+          ]
+        };
+      }
+
+      const toggleValue = parseToggle(input.args[2]);
+      if (toggleValue == null) {
+        return {
+          entries: [
+            {
+              id: createId('config-ui-error'),
+              kind: 'error',
+              title: 'UI Config Usage',
+              body: '/config ui <show|compact <on|off>|header-details <on|off>|usage <on|off>|hints <on|off>|warnings <on|off>|research-stats <on|off>>'
+            }
+          ]
+        };
+      }
+
+      const uiKey =
+        subaction === 'compact'
+          ? 'compactMode'
+          : subaction === 'header-details'
+            ? 'showHeaderDetails'
+            : subaction === 'usage'
+              ? 'showUsage'
+              : subaction === 'hints'
+                ? 'showHints'
+                : subaction === 'warnings'
+                  ? 'showWarnings'
+                  : subaction === 'research-stats'
+                    ? 'showResearchStats'
+                    : null;
+
+      if (!uiKey) {
+        return {
+          entries: [
+            {
+              id: createId('config-ui-error'),
+              kind: 'error',
+              title: 'UI Config Usage',
+              body: '/config ui <show|compact <on|off>|header-details <on|off>|usage <on|off>|hints <on|off>|warnings <on|off>|research-stats <on|off>>'
+            }
+          ]
+        };
+      }
+
+      const nextGlobalConfig: GlobalConfig = {
+        ...context.globalConfig,
+        ui: {
+          ...context.globalConfig.ui,
+          [uiKey]: toggleValue
+        }
+      };
+      await saveGlobalConfig(nextGlobalConfig);
+
+      return {
+        globalConfig: nextGlobalConfig,
+        entries: [
+          {
+            id: createId('config-ui-notice'),
+            kind: 'notice',
+            title: 'UI Updated',
+            body: `${subaction} set to ${toggleValue ? 'on' : 'off'}.`
+          }
+        ]
+      };
+    }
+
+    if (action === 'hister') {
+      const subaction = input.args[1] ?? 'show';
+      const hister = context.globalConfig.hister;
+
+      if (subaction === 'show') {
+        return {
+          entries: [
+            {
+              id: createId('config-hister-show'),
+              kind: 'notice' as const,
+              title: 'Hister Config',
+              body: [
+                `Enabled: ${hister.enabled ? 'yes' : 'no'}`,
+                `Base URL: ${hister.baseUrl}`,
+                `Token: ${hister.token ? '(set)' : '(not set)'}`
+              ].join('\n')
+            }
+          ]
+        };
+      }
+
+      if (subaction === 'enabled') {
+        const value = parseToggle(input.args[2]);
+        if (value == null) {
+          return histerConfigError('Usage: /config hister enabled <on|off>');
+        }
+        const nextGlobalConfig: GlobalConfig = {
+          ...context.globalConfig,
+          hister: { ...hister, enabled: value }
+        };
+        await saveGlobalConfig(nextGlobalConfig);
+        return {
+          globalConfig: nextGlobalConfig,
+          entries: [
+            {
+              id: createId('config-hister-enabled'),
+              kind: 'notice' as const,
+              title: 'Hister Updated',
+              body: `Hister integration ${value ? 'enabled' : 'disabled'}.${value ? ' search_history tool will appear in research and wiki modes.' : ''}`
+            }
+          ]
+        };
+      }
+
+      if (subaction === 'url') {
+        const value = input.args.slice(2).join(' ').trim();
+        if (!value) {
+          return histerConfigError('Usage: /config hister url <url>');
+        }
+        const nextGlobalConfig: GlobalConfig = {
+          ...context.globalConfig,
+          hister: { ...hister, baseUrl: value }
+        };
+        await saveGlobalConfig(nextGlobalConfig);
+        return {
+          globalConfig: nextGlobalConfig,
+          entries: [
+            {
+              id: createId('config-hister-url'),
+              kind: 'notice' as const,
+              title: 'Hister Updated',
+              body: `Hister base URL set to ${value}.`
+            }
+          ]
+        };
+      }
+
+      if (subaction === 'token') {
+        const value = input.args.slice(2).join(' ').trim();
+        if (!value) {
+          return histerConfigError('Usage: /config hister token <token>');
+        }
+        const nextGlobalConfig: GlobalConfig = {
+          ...context.globalConfig,
+          hister: { ...hister, token: value }
+        };
+        await saveGlobalConfig(nextGlobalConfig);
+        return {
+          globalConfig: nextGlobalConfig,
+          entries: [
+            {
+              id: createId('config-hister-token'),
+              kind: 'notice' as const,
+              title: 'Hister Updated',
+              body: 'Hister access token saved.'
+            }
+          ]
+        };
+      }
+
+      return histerConfigError(
+        'Usage: /config hister <show|enabled <on|off>|url <url>|token <token>>'
+      );
+    }
+
     return {
       entries: [
         {
           id: createId('config-usage'),
           kind: 'error',
           title: 'Config Usage',
-          body: '/config [show|provider <name>|models [provider]|model <name|index>|api-key <provider> <key>|max-tokens <count>|search <...>|budget <show|high-turn <amount>|high-session <amount>|high-prompt <tokens>|high-context <chars>>]'
+          body: '/config [show|provider <name>|models [provider]|model <name|index>|api-key <provider> <key>|max-tokens <count>|search <...>|budget <show|high-turn <amount>|high-session <amount>|high-prompt <tokens>|high-context <chars>>|ui <...>|hister <show|enabled <on|off>|url <url>|token <token>>]'
         }
       ]
     };
@@ -741,6 +931,19 @@ function searchConfigError(body: string) {
         id: createId('config-search-error'),
         kind: 'error' as const,
         title: 'Search Config Usage',
+        body
+      }
+    ]
+  };
+}
+
+function histerConfigError(body: string) {
+  return {
+    entries: [
+      {
+        id: createId('config-hister-error'),
+        kind: 'error' as const,
+        title: 'Hister Config Usage',
         body
       }
     ]

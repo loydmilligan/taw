@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "TAW Browser Bridge",
-  "version": "0.1.0",
-  "description": "Send the current page or selected text into Terminal AI Workspace research sessions.",
+  "version": "0.1.8",
+  "description": "Send the current page into Terminal AI Workspace research or wiki-ingest sessions.",
   "action": {
     "default_popup": "popup.html"
   },

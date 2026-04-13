@@ -62,6 +62,7 @@ export interface ProviderCompletionResult {
   toolCalls: ChatToolCall[];
   startInfo?: ProviderStreamStartInfo;
   finalInfo?: ProviderStreamFinalInfo;
+  finishReason?: string | null;
 }
 
 export interface ProviderAdapter {
