@@ -1,8 +1,8 @@
 # Terminal AI Workspace
 
-TAW is a terminal-native, chat-first AI workspace for planning, brainstorming, workflow design, workflow review, and markdown artifact generation. It is intentionally not a coding agent.
+TAW is a terminal-native, chat-first AI workspace for planning, research, wiki-backed knowledge management, workflow design, and markdown artifact generation. It now also includes a bridge-hosted mobile companion app for capture, review, and lightweight topic interaction.
 
-Current baseline: `0.1.0-beta.4`
+Current baseline: `0.1.0-beta.10`
 
 Structured modes now use a draft-first workflow:
 
@@ -62,6 +62,12 @@ In research modes, TAW can now use a local `search_web` tool backed by SearXNG d
 
 A minimal Chromium extension MVP lives in [browser-extension/README.md](browser-extension/README.md).
 
+The same bridge can also serve a mobile companion app:
+
+- bootstrap once with `https://<your-host>/app/bootstrap?token=<bridge-token>`
+- then use `https://<your-host>/app`
+- current mobile panels include `Capture`, `Ask TAWD`, `Actions`, `Recent Status`, and `Topics`
+
 ## Commands
 
 - `/brainstorm`
@@ -85,6 +91,10 @@ A minimal Chromium extension MVP lives in [browser-extension/README.md](browser-
 - `/session-usage`
 - `/config`
 - `/config search`
+- `/hister <search|show|open|reindex>`
+- `/wiki <init|ingest|ingest-hister|links|reindex|query|lint|show|list>`
+- `/confirm`
+- `/cancel`
 - `/init`
 - `/summarize-session`
 - `/help`
@@ -183,6 +193,8 @@ A repeatable tmux-based research harness lives in [docs/research-harness.md](doc
 Memory design notes live in [docs/memory-architecture.md](docs/memory-architecture.md).
 
 Research and browser handoff docs live in [docs/research-mode-spec.md](docs/research-mode-spec.md), [docs/browser-bridge-spec.md](docs/browser-bridge-spec.md), and [docs/memory-model-spec.md](docs/memory-model-spec.md).
+
+Wiki and Hister references live in [docs/HISTER_README.md](docs/HISTER_README.md), [docs/wiki-link-review-plan.md](docs/wiki-link-review-plan.md), and [docs/wiki-roadmap.md](docs/wiki-roadmap.md).
 
 Versioning policy lives in [docs/versioning.md](docs/versioning.md). Release history lives in [CHANGELOG.md](CHANGELOG.md).
 

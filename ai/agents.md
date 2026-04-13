@@ -15,9 +15,19 @@ Protects module boundaries, provider abstraction, filesystem model, and future s
 
 ### Implementation Agent
 Builds one milestone at a time and uses docs as source of truth.
+For any substantial implementation sprint, create or update a handoff doc under `docs/working/` before major coding starts, then keep it updated through the sprint.
+Required handoff doc sections: Goal, Scope, Constraints, Implementation Plan, Step Status, Decisions, Open Questions, Verification, Post-Implementation Summary, Files Touched, Next Steps.
+Naming convention: `docs/working/YYYY-MM-DD-<short-slug>.md`.
+The handoff doc is the authoritative takeover record for another agent if the current agent stops mid-sprint.
 
 ### QA Reviewer
 Runs manual checklists, adds a few critical tests, and verifies acceptance criteria rather than current visuals.
+If a sprint produces something the user should test on another device, be ready to send an ntfy notification when requested.
+Current ntfy target:
+- server: `https://ntfy.mattmariani.com`
+- topic: `agent-chat`
+Example:
+`curl -sS -X POST 'https://ntfy.mattmariani.com/agent-chat' -H 'Title: TAW Update' -H 'Priority: high' -H 'Tags: mobile,test_tube' -d 'Your message here'`
 
 ## Future in-app roles
 

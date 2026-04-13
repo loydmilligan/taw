@@ -25,6 +25,18 @@ The auth token is written to:
 
 Paste that token into the extension popup the first time you use it.
 
+The same bridge token can also bootstrap the mobile companion PWA once at:
+
+```text
+https://<your-host>/app/bootstrap?token=<bridge-token>
+```
+
+After bootstrap, use:
+
+```text
+https://<your-host>/app
+```
+
 ## Optional search backend stack
 
 TAW now ships an optional helper-service stack in `infra/docker-compose.yml`.
@@ -52,7 +64,10 @@ Configure idle auto-stop from TAW itself with:
 
 - send the current page into a new TAW research session
 - send only the selected text into a new TAW research session
+- send the current page into a wiki ingest session by choosing an existing wiki topic or entering a new one
+- optionally auto-ingest wiki content immediately in the background without opening the TAW UI
 - choose research type
+- choose workflow type: research or wiki
 - optionally override working directory
 - optionally add an initial question and note
 - show SearXNG status and start or stop it through the bridge
