@@ -3,35 +3,22 @@ import { createId } from '../utils/ids.js';
 import type { CommandDefinition } from './types.js';
 
 const PHASE1_ENTRY = [
-  '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
-  'BRAINSTORM — Phase 1: Discovery',
-  '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
   'Explore the idea space. Share your concept, problem, or question — stream of consciousness is welcome here.',
   '',
-  'I will ask questions, surface angles you may not have considered, and identify what is still unknown.',
-  'When I have enough to map the space, I will suggest moving to Phase 2.',
+  'I will ask questions, surface angles you may not have considered, and identify what is still unknown. When I have enough to map the space, I will suggest moving to Phase 2.',
   '',
-  'Say "map it" or /brainstorm phase2 to move to Phase 2 at any time.',
-  '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  'Say "map it" or /brainstorm phase2 to move to Phase 2 at any time.'
 ].join('\n');
 
 const PHASE2_ENTRY = [
-  '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
-  'BRAINSTORM — Phase 2: Mapping',
-  '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
   'Building your exploration map. I will present a structured skeleton and guide you through filling it in with targeted questions.',
   '',
   'Say "back to phase 1" or /brainstorm phase1 to revisit an area.',
-  'Say "done" or use /finalize when the map is ready to save.',
-  '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  'Say "done" or use /finalize when the map is ready to save.'
 ].join('\n');
 
 const PHASE1_RETURN = [
-  '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
-  'BRAINSTORM — Returning to Phase 1',
-  '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
-  'Back in Discovery mode. The mapping work above is preserved — I will keep it in view while we explore the missing area.',
-  '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
+  'Back in Discovery mode. The mapping work above is preserved — I will keep it in view while we explore the missing area.'
 ].join('\n');
 
 export const brainstormCommand: CommandDefinition = {
