@@ -81,7 +81,9 @@ export const finalizeCommand: CommandDefinition = {
 
     const artifactContent = context.mode.startsWith('Research ')
       ? await buildResearchFinalizeContent(context, latestAssistant.body)
-      : latestAssistant.body;
+      : context.mode === 'Brainstorm Phase 2'
+        ? cleanPhase2Artifact(latestAssistant.body)
+        : latestAssistant.body;
     const artifact = await createModeArtifact(
       context.session,
       context.mode,
@@ -227,6 +229,28 @@ function buildFinalizeGenerationPrompt(mode: string): string {
   }
 
   return 'Produce the complete final draft now. Make it ready to save as the artifact.';
+}
+
+function cleanPhase2Artifact(body: string): string {
+  // Strip the mode footer (─── divider and everything after it)
+  const footerDivider = '─────────────────────────────────────────';
+  const footerIndex = body.indexOf(footerDivider);
+  const withoutFooter = footerIndex !== -1
+    ? body.slice(0, footerIndex).trimEnd()
+    : body;
+
+  // Strip conversational preamble before the first ## heading
+  const headingMatch = withoutFooter.match(/\n(##\s)/);
+  if (headingMatch?.index !== undefined) {
+    return withoutFooter.slice(headingMatch.index).trimStart();
+  }
+
+  // Heading at very start
+  if (withoutFooter.trimStart().startsWith('##')) {
+    return withoutFooter.trimStart();
+  }
+
+  return withoutFooter.trim();
 }
 
 async function readSessionNotes(notesPath: string): Promise<string> {
