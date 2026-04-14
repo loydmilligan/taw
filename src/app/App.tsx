@@ -309,6 +309,20 @@ export function App({ state }: AppProps): React.JSX.Element {
       transcript: [...current.transcript, userEntry]
     }));
 
+    // Phase transition keywords — intercept natural language triggers before slash command check
+    const lowerTrimmed = trimmed.toLowerCase().replace(/[.!?]+$/, '').trim();
+    if (appStateRef.current.mode === 'Brainstorm' && lowerTrimmed === 'map it') {
+      await runCommand('/brainstorm phase2');
+      return;
+    }
+    if (
+      appStateRef.current.mode === 'Brainstorm Phase 2' &&
+      (lowerTrimmed === 'back to phase 1' || lowerTrimmed === 'back to phase1')
+    ) {
+      await runCommand('/brainstorm phase1');
+      return;
+    }
+
     if (isSlashCommand(trimmed)) {
       await runCommand(trimmed);
       return;

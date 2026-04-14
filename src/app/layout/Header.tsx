@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import type { AppState } from '../../types/app.js';
-import { theme } from '../theme.js';
+import { theme, getModeColor } from '../theme.js';
 import { APP_VERSION } from '../../version.js';
 
 interface HeaderProps {
@@ -30,7 +30,7 @@ export function Header({ state }: HeaderProps): React.JSX.Element {
       </Box>
       <Box justifyContent="space-between">
         <Text>
-          Mode <Text color={theme.accent}>{state.mode}</Text>
+          Mode <Text color={getModeColor(state.mode)}>{state.mode}</Text>
           {'  '}State <Text color={statusColor}>{sessionLabel}</Text>
           {'  '}Phase <Text color={phaseColor}>{state.phase}</Text>
         </Text>

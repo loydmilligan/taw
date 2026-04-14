@@ -19,7 +19,15 @@ const modeDefinitions: Record<string, ModeDefinition> = {
     artifactType: 'project-brief',
     artifactTitle: 'project-brief',
     activationMessage:
-      'Brainstorm mode is active. Explore the idea first. Use /finalize when you want to save a project brief.',
+      'Brainstorm Phase 1 is active. Explore freely — share your idea or question.',
+    researchType: null
+  },
+  'Brainstorm Phase 2': {
+    name: 'Brainstorm Phase 2',
+    artifactType: 'exploration-map',
+    artifactTitle: 'exploration-map',
+    activationMessage:
+      'Brainstorm Phase 2 is active. Building the exploration map.',
     researchType: null
   },
   'Workflow Review': {
