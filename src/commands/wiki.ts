@@ -48,7 +48,7 @@ export const wikiCommand: CommandDefinition = {
   name: 'wiki',
   description: 'Manage your personal knowledge wiki.',
   usage:
-    '/wiki <init <topic>|ingest <topic> [review] [file]|ingest-hister <topic> [review] <query>|links <topic> [recent]|reindex <topic>|query <topic> <question>|lint <topic>|show [topic]|list>',
+    '/wiki <init <topic>|ingest <topic> [review] [file]|ingest-source <topic> <N> [review]|ingest-hister <topic> [review] <query>|links <topic> [recent]|reindex <topic>|query <topic> <question>|lint <topic>|show [topic]|list>',
 
   async run(input, context) {
     const sub = input.args[0];
@@ -67,9 +67,19 @@ export const wikiCommand: CommandDefinition = {
       return runIngest(input.args[1], hasReview, fileArg ?? null, context);
     }
 
+    if (sub === 'ingest-source') {
+      const hasReview = input.args.includes('review');
+      const nonFlags = input.args.slice(2).filter((a) => a !== 'review');
+      const sourceNum = nonFlags[0] ? parseInt(nonFlags[0], 10) : NaN;
+      return runIngestSource(input.args[1], sourceNum, hasReview, context);
+    }
+
     if (sub === 'ingest-hister') {
       const hasReview = input.args.includes('review');
-      const query = input.args.slice(2).filter((a) => a !== 'review').join(' ');
+      const query = input.args
+        .slice(2)
+        .filter((a) => a !== 'review')
+        .join(' ');
       return runIngestHister(input.args[1], hasReview, query, context);
     }
 
@@ -99,7 +109,7 @@ export const wikiCommand: CommandDefinition = {
           id: createId('wiki-usage'),
           kind: 'error' as const,
           title: 'Wiki Usage',
-          body: '/wiki <init <topic>|ingest <topic> [review] [file]|ingest-hister <topic> [review] <query>|links <topic> [recent]|reindex <topic>|query <topic> <question>|lint <topic>|show [topic]|list>'
+          body: '/wiki <init <topic>|ingest <topic> [review] [file]|ingest-source <topic> <N> [review]|ingest-hister <topic> [review] <query>|links <topic> [recent]|reindex <topic>|query <topic> <question>|lint <topic>|show [topic]|list>'
         }
       ]
     };
@@ -152,7 +162,11 @@ async function runInit(topic: string | undefined) {
   const alreadyExists = await wikiExists(normalized);
   const info = await initWiki(normalized);
 
-  const setupPrompt = buildSetupPrompt(normalized, info.schemaPath, info.topicDir);
+  const setupPrompt = buildSetupPrompt(
+    normalized,
+    info.schemaPath,
+    info.topicDir
+  );
 
   return {
     mode: buildWikiMode('Setup', normalized),
@@ -210,14 +224,15 @@ async function runIngest(
   }
 
   const info = getWikiInfo(normalized);
-  const { material, source } = await buildIngestMaterial(context, filePath);
+  const { material, source, wasTruncated } = await buildIngestMaterial(
+    context,
+    filePath
+  );
   const mode = buildWikiMode(review ? 'Stage' : 'Ingest', normalized);
 
-  // Schema and index are now injected via buildPromptContext — the queued
-  // prompt is kept short so it doesn't appear as a wall of text in the transcript.
   const prompt = review
-    ? buildStagePrompt(normalized, material, info.topicDir)
-    : buildIngestPrompt(normalized, material, info.topicDir);
+    ? buildStagePrompt(normalized, material, info.topicDir, wasTruncated)
+    : buildIngestPrompt(normalized, material, info.topicDir, wasTruncated);
 
   return {
     mode,
@@ -229,9 +244,159 @@ async function runIngest(
         kind: 'notice' as const,
         title: review ? 'Wiki Stage — Review Mode' : 'Wiki Ingest — Auto Mode',
         body: review
-          ? [`Wiki: ${normalized}`, `Source: ${source}`, 'TAW will show you what it plans to add. Review it, give feedback, then /finalize to execute.'].join('\n')
-          : [`Wiki: ${normalized}`, `Source: ${source}`, 'TAW is writing wiki pages now.'].join('\n')
+          ? [
+              `Wiki: ${normalized}`,
+              `Source: ${source}`,
+              'TAW will show you what it plans to add. Review it, give feedback, then /finalize to execute.'
+            ].join('\n')
+          : [
+              `Wiki: ${normalized}`,
+              `Source: ${source}`,
+              'TAW is writing wiki pages now.'
+            ].join('\n')
       }
+    ]
+  };
+}
+
+async function runIngestSource(
+  topic: string | undefined,
+  sourceNum: number,
+  review: boolean,
+  context: Parameters<typeof wikiCommand.run>[1]
+) {
+  if (!topic || isNaN(sourceNum) || sourceNum < 1) {
+    return {
+      entries: [
+        error(
+          createId('wiki-ingest-source-usage'),
+          'Wiki Ingest Source Usage',
+          [
+            '/wiki ingest-source <topic> <N> [review]',
+            'Examples:',
+            '  /wiki ingest-source vibecoding 2',
+            '  /wiki ingest-source vibecoding 1 review',
+            '',
+            'Use /sources to see the numbered list of sources in this session.'
+          ].join('\n')
+        )
+      ]
+    };
+  }
+
+  const normalized = normalizeTopic(topic);
+
+  if (!(await wikiExists(normalized))) {
+    return {
+      entries: [
+        error(
+          createId('wiki-ingest-source-missing'),
+          'Wiki Not Found',
+          `No wiki named "${normalized}". Create it first with /wiki init ${normalized}`
+        )
+      ]
+    };
+  }
+
+  const sources = await readResearchSources(context.session);
+
+  if (sources.length === 0) {
+    return {
+      entries: [
+        error(
+          createId('wiki-ingest-source-no-sources'),
+          'No Research Sources',
+          'This session has no research sources yet. Use /sources to check.'
+        )
+      ]
+    };
+  }
+
+  const source = sources[sourceNum - 1];
+
+  if (!source) {
+    return {
+      entries: [
+        error(
+          createId('wiki-ingest-source-oob'),
+          'Source Not Found',
+          `Source ${sourceNum} does not exist. This session has ${sources.length} source${sources.length === 1 ? '' : 's'}. Use /sources to see them.`
+        )
+      ]
+    };
+  }
+
+  // Build material from snapshot (full text) → excerpt → bare metadata
+  const parts: string[] = [];
+
+  if (source.snapshotPath) {
+    try {
+      const content = await readFile(source.snapshotPath, 'utf8');
+      parts.push(`## Source: ${source.title}\n\n${content.slice(0, 10000)}`);
+    } catch {
+      // snapshot unreadable — fall through to excerpt
+    }
+  }
+
+  if (parts.length === 0 && source.excerpt) {
+    parts.push(
+      `## Source: ${source.title}\n\n${source.excerpt.slice(0, 6000)}`
+    );
+  }
+
+  if (parts.length === 0) {
+    parts.push(
+      [
+        `## Source: ${source.title}`,
+        source.url ? `URL: ${source.url}` : null,
+        source.selectedText
+          ? `Selected text: ${source.selectedText.slice(0, 2000)}`
+          : null,
+        source.note ? `Note: ${source.note}` : null,
+        '(No full text available — ingest based on available metadata.)'
+      ]
+        .filter(Boolean)
+        .join('\n')
+    );
+  }
+
+  if (source.url) {
+    parts.push(`Source URL: ${source.url}`);
+  }
+  if (source.note) {
+    parts.push(`Researcher note: ${source.note}`);
+  }
+
+  const rawMaterial = parts.join('\n\n');
+  const { material, wasTruncated } = truncateMaterial(rawMaterial);
+  const info = getWikiInfo(normalized);
+  const sourceLabel = `source ${sourceNum}: "${source.title}"${wasTruncated ? ' (truncated)' : ''}`;
+  const mode = buildWikiMode(review ? 'Stage' : 'Ingest', normalized);
+  const prompt = review
+    ? buildStagePrompt(normalized, material, info.topicDir, wasTruncated)
+    : buildIngestPrompt(normalized, material, info.topicDir, wasTruncated);
+
+  return {
+    mode,
+    phase: 'idle' as const,
+    queuedInputs: [prompt],
+    entries: [
+      notice(
+        createId('wiki-ingest-source'),
+        review ? 'Wiki Stage — Source Review Mode' : 'Wiki Ingest — Source',
+        review
+          ? [
+              `Wiki: ${normalized}`,
+              `Source: ${sourceLabel}`,
+              'TAW will show you what it plans to add. Review it, give feedback, then /finalize to execute.'
+            ].join('\n')
+          : [
+              `Wiki: ${normalized}`,
+              `Source: ${sourceLabel}`,
+              `Kind: ${source.kind} | Origin: ${source.origin}`,
+              'TAW is writing wiki pages now.'
+            ].join('\n')
+      )
     ]
   };
 }
@@ -383,7 +548,9 @@ async function runIngestHister(
           id: createId('wiki-ingest-hister-error'),
           kind: 'error' as const,
           title: 'Hister Ingest Failed',
-          body: ingest.error ?? 'Could not build wiki ingest material from browser history.'
+          body:
+            ingest.error ??
+            'Could not build wiki ingest material from browser history.'
         }
       ]
     };
@@ -391,8 +558,18 @@ async function runIngestHister(
 
   const mode = buildWikiMode(review ? 'Stage' : 'Ingest', normalized);
   const prompt = review
-    ? buildStagePrompt(normalized, ingest.material, info.topicDir)
-    : buildIngestPrompt(normalized, ingest.material, info.topicDir);
+    ? buildStagePrompt(
+        normalized,
+        ingest.material,
+        info.topicDir,
+        ingest.wasTruncated
+      )
+    : buildIngestPrompt(
+        normalized,
+        ingest.material,
+        info.topicDir,
+        ingest.wasTruncated
+      );
 
   return {
     mode,
@@ -689,16 +866,36 @@ async function runShow(topic: string | undefined) {
   };
 }
 
+// --- constants ---
+
+// Cap total ingest material to ~60k chars (~15-20k tokens). Beyond this the
+// LLM prompt is too large and will hit token limits. Truncation is better than
+// an outright failure the user can't recover from.
+const MAX_INGEST_MATERIAL_CHARS = 60_000;
+
 // --- helpers ---
 
 function normalizeTopic(raw: string): string {
   return raw.toLowerCase().replace(/[^a-z0-9-]/g, '-');
 }
 
+function truncateMaterial(material: string): {
+  material: string;
+  wasTruncated: boolean;
+} {
+  if (material.length <= MAX_INGEST_MATERIAL_CHARS) {
+    return { material, wasTruncated: false };
+  }
+  return {
+    material: `${material.slice(0, MAX_INGEST_MATERIAL_CHARS)}\n\n[Source material truncated to fit context window. Process what is above and note that additional content was omitted.]`,
+    wasTruncated: true
+  };
+}
+
 async function buildIngestMaterial(
   context: Parameters<typeof wikiCommand.run>[1],
   filePath: string | null
-): Promise<{ material: string; source: string }> {
+): Promise<{ material: string; source: string; wasTruncated: boolean }> {
   const parts: string[] = [];
   let source = 'current session';
 
@@ -719,10 +916,14 @@ async function buildIngestMaterial(
   if (recentArtifact) {
     try {
       const content = await readFile(recentArtifact.path, 'utf8');
-      parts.push(`## Finalized Artifact: ${recentArtifact.title}\n\n${content.slice(0, 6000)}`);
+      parts.push(
+        `## Finalized Artifact: ${recentArtifact.title}\n\n${content.slice(0, 6000)}`
+      );
       source = recentArtifact.title;
     } catch {
-      parts.push(`## Finalized Artifact: ${recentArtifact.title}\n\n(Could not read: ${recentArtifact.path})`);
+      parts.push(
+        `## Finalized Artifact: ${recentArtifact.title}\n\n(Could not read: ${recentArtifact.path})`
+      );
     }
   }
 
@@ -761,12 +962,20 @@ async function buildIngestMaterial(
       source = 'recent conversation';
     } else {
       // Last resort: tell the LLM to work from what was discussed
-      parts.push('## Source\n\nNo specific source material. Use the current conversation context and your knowledge to add relevant content to the wiki.');
+      parts.push(
+        '## Source\n\nNo specific source material. Use the current conversation context and your knowledge to add relevant content to the wiki.'
+      );
       source = 'conversation context';
     }
   }
 
-  return { material: parts.join('\n\n'), source };
+  const raw = parts.join('\n\n');
+  const { material, wasTruncated } = truncateMaterial(raw);
+  if (wasTruncated) {
+    source = `${source} (truncated)`;
+  }
+
+  return { material, source, wasTruncated };
 }
 
 function buildSetupPrompt(
@@ -812,9 +1021,13 @@ function buildSetupPrompt(
 function buildIngestPrompt(
   topic: string,
   material: string,
-  topicDir: string
+  topicDir: string,
+  wasTruncated: boolean
 ): string {
   const today = new Date().toISOString().slice(0, 10);
+  const truncationNote = wasTruncated
+    ? '\n\nNOTE: The source material above was truncated to fit the context window. Process what is available and note in your summary that additional content was omitted. You can run another ingest pass later to cover the remaining material.'
+    : '';
   return [
     `Ingest the following material into the ${topic} wiki.`,
     `Wiki directory: ${topicDir}`,
@@ -832,15 +1045,20 @@ function buildIngestPrompt(
     'For brand-new pages leave overwrite false (default).',
     'Update pages/overview.md and index.md to reflect new content.',
     'Cross-link using [[slug|Display Text]] notation. A good ingest touches 5-10 pages.',
-    'After all writes are complete, briefly summarize what was written. Start with totals for notes created and notes updated, then list each page path and whether it was created or updated.'
+    'After all writes are complete, briefly summarize what was written. Start with totals for notes created and notes updated, then list each page path and whether it was created or updated.',
+    truncationNote
   ].join('\n\n');
 }
 
 function buildStagePrompt(
   topic: string,
   material: string,
-  topicDir: string
+  topicDir: string,
+  wasTruncated: boolean
 ): string {
+  const truncationNote = wasTruncated
+    ? '\n\nNOTE: The source material above was truncated to fit the context window. Plan based on what is available and note that additional content was omitted.'
+    : '';
   return [
     `Plan what you would add to the ${topic} wiki for this material. Do NOT write any files yet.`,
     `Wiki directory: ${topicDir}`,
@@ -854,7 +1072,8 @@ function buildStagePrompt(
     '- Use Obsidian-safe links like [[agentic-loops|Agentic Loops]] when previewing link targets',
     '- Do not create a new page if the index already shows a page with that same path/name',
     '',
-    'Do not call write_wiki_page. When I run /finalize, you will execute the plan.'
+    'Do not call write_wiki_page. When I run /finalize, you will execute the plan.',
+    truncationNote
   ].join('\n\n');
 }
 

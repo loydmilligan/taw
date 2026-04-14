@@ -128,6 +128,7 @@ export async function executeChatTurn(
         toolRuntime.localToolNames,
         toolRuntime.executeToolCall,
         context.signal,
+        context.mode,
         (info) => {
           telemetryTurn.streamInfo = info;
         },
@@ -215,6 +216,7 @@ async function executeToolAwareTurn(
   localToolNames: Set<string>,
   executeToolCall: (toolCall: ChatToolCall) => Promise<string>,
   signal: AbortSignal | undefined,
+  mode: string,
   onStart: (info: {
     generationId?: string | null;
     requestId?: string | null;
@@ -253,19 +255,24 @@ async function executeToolAwareTurn(
 
         if (reason === 'length') {
           // Token-limit truncation: response cut off mid-call.
+          // For wiki modes, return a helpful message instead of throwing.
+          const isWikiMode = isWikiWriteMode(mode);
+          if (isWikiMode) {
+            return `Wiki ingest was interrupted because the response exceeded the token limit.${reasonMsg} Current limit: ${limit ?? 'default'} tokens. Try again with /config max-tokens <higher-number> (max 8192), or reduce the amount of source material being ingested.`;
+          }
           const tokenMsg = limit
             ? ` Current limit: ${limit} tokens. Raise it with /config max-tokens <number> (max 8192).`
             : '';
           throw new Error(
             `LLM response was truncated before any tool calls or text were produced.${reasonMsg}${tokenMsg} ` +
-            `The token limit is too low to fit the full response. Raise max-tokens and retry.`
+              `The token limit is too low to fit the full response. Raise max-tokens and retry.`
           );
         }
 
         throw new Error(
           `LLM returned an empty response with no tool calls.${reasonMsg} ` +
-          `This can happen when the provider receives an invalid tools payload or the ` +
-          `model refuses to act. Check your provider config and model compatibility.`
+            `This can happen when the provider receives an invalid tools payload or the ` +
+            `model refuses to act. Check your provider config and model compatibility.`
         );
       }
 

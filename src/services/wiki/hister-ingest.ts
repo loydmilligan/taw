@@ -3,6 +3,7 @@ import { searchHister } from '../hister/client.js';
 
 const DEFAULT_MAX_HISTORY_RESULTS = 5;
 const MAX_PAGE_TEXT_CHARS = 12000;
+const MAX_TOTAL_MATERIAL_CHARS = 60_000;
 
 export interface HisterIngestResult {
   ok: boolean;
@@ -10,6 +11,7 @@ export interface HisterIngestResult {
   sourceLabel: string;
   matchedCount: number;
   fetchedCount: number;
+  wasTruncated: boolean;
   error?: string;
 }
 
@@ -33,29 +35,50 @@ export async function buildHisterIngestMaterial(
       sourceLabel: '',
       matchedCount: fetched.matchedCount,
       fetchedCount: 0,
+      wasTruncated: false,
       error: fetched.error
     };
   }
 
-  const material = [
+  const parts = [
     `## Hister Query\n\n${query}`,
-    `## Hister Matches\n\nMatched ${fetched.matchedCount} history entr${fetched.matchedCount === 1 ? 'y' : 'ies'} and fetched readable content for ${fetched.pages.length}.`,
-    ...fetched.pages.map((page, index) =>
-      [
-        `## History Source ${index + 1}: ${page.title}`,
-        `URL: ${page.url}`,
-        '',
-        page.content
-      ].join('\n')
-    )
-  ].join('\n\n');
+    `## Hister Matches\n\nMatched ${fetched.matchedCount} history entr${fetched.matchedCount === 1 ? 'y' : 'ies'} and fetched readable content for ${fetched.pages.length}.`
+  ];
+
+  let wasTruncated = false;
+  for (let index = 0; index < fetched.pages.length; index += 1) {
+    const page = fetched.pages[index];
+    const section = [
+      `## History Source ${index + 1}: ${page.title}`,
+      `URL: ${page.url}`,
+      '',
+      page.content
+    ].join('\n');
+
+    const projectedLength = parts.join('\n\n').length + 2 + section.length;
+    if (projectedLength > MAX_TOTAL_MATERIAL_CHARS) {
+      const remaining =
+        MAX_TOTAL_MATERIAL_CHARS - parts.join('\n\n').length - 2;
+      if (remaining > 500) {
+        parts.push(
+          `${section.slice(0, remaining)}\n\n[Source truncated to fit context window. Additional pages were omitted.]`
+        );
+      }
+      wasTruncated = true;
+      break;
+    }
+    parts.push(section);
+  }
+
+  const material = parts.join('\n\n');
 
   return {
     ok: true,
     material,
-    sourceLabel: `Hister query "${query}" (${fetched.pages.length}/${fetched.matchedCount} pages fetched)`,
+    sourceLabel: `Hister query "${query}" (${fetched.pages.length}/${fetched.matchedCount} pages fetched${wasTruncated ? ', material truncated' : ''})`,
     matchedCount: fetched.matchedCount,
-    fetchedCount: fetched.pages.length
+    fetchedCount: fetched.pages.length,
+    wasTruncated
   };
 }
 
@@ -71,6 +94,7 @@ export async function buildHisterIngestMaterialFromResults(
       sourceLabel: '',
       matchedCount: 0,
       fetchedCount: 0,
+      wasTruncated: false,
       error: `No browser history results matched "${query}".`
     };
   }
@@ -93,33 +117,55 @@ export async function buildHisterIngestMaterialFromResults(
       sourceLabel: '',
       matchedCount: results.length,
       fetchedCount: 0,
+      wasTruncated: false,
       error:
         fetchedPages
           .map((page) => page.error)
           .filter(Boolean)
-          .join(' | ') || 'Matched history entries, but could not fetch readable page content.'
+          .join(' | ') ||
+        'Matched history entries, but could not fetch readable page content.'
     };
   }
 
-  const material = [
+  const parts = [
     `## Hister Query\n\n${query}`,
-    `## Hister Matches\n\nMatched ${results.length} history entr${results.length === 1 ? 'y' : 'ies'} and fetched readable content for ${pages.length}.`,
-    ...pages.map((page, index) =>
-      [
-        `## History Source ${index + 1}: ${page.title}`,
-        `URL: ${page.url}`,
-        '',
-        page.content
-      ].join('\n')
-    )
-  ].join('\n\n');
+    `## Hister Matches\n\nMatched ${results.length} history entr${results.length === 1 ? 'y' : 'ies'} and fetched readable content for ${pages.length}.`
+  ];
+
+  let wasTruncated = false;
+  for (let index = 0; index < pages.length; index += 1) {
+    const page = pages[index];
+    const section = [
+      `## History Source ${index + 1}: ${page.title}`,
+      `URL: ${page.url}`,
+      '',
+      page.content
+    ].join('\n');
+
+    const projectedLength = parts.join('\n\n').length + 2 + section.length;
+    if (projectedLength > MAX_TOTAL_MATERIAL_CHARS) {
+      const remaining =
+        MAX_TOTAL_MATERIAL_CHARS - parts.join('\n\n').length - 2;
+      if (remaining > 500) {
+        parts.push(
+          `${section.slice(0, remaining)}\n\n[Source truncated to fit context window. Additional pages were omitted.]`
+        );
+      }
+      wasTruncated = true;
+      break;
+    }
+    parts.push(section);
+  }
+
+  const material = parts.join('\n\n');
 
   return {
     ok: true,
     material,
-    sourceLabel: `Hister query "${query}" (${pages.length}/${results.length} pages fetched)`,
+    sourceLabel: `Hister query "${query}" (${pages.length}/${results.length} pages fetched${wasTruncated ? ', material truncated' : ''})`,
     matchedCount: results.length,
-    fetchedCount: pages.length
+    fetchedCount: pages.length,
+    wasTruncated
   };
 }
 
@@ -167,7 +213,8 @@ export async function searchAndFetchHisterPages(
         fetchedPages
           .map((page) => page.error)
           .filter(Boolean)
-          .join(' | ') || 'Matched history entries, but could not fetch readable page content.'
+          .join(' | ') ||
+        'Matched history entries, but could not fetch readable page content.'
     };
   }
 
@@ -277,7 +324,6 @@ async function fetchIndexedHistoryDocument(
       return null;
     }
 
-    // Handle either plain text or a JSON envelope carrying content-ish fields.
     const normalized = normalizeIndexedDocumentBody(body);
     return normalized ? trimText(normalized) : null;
   } catch {
@@ -332,7 +378,10 @@ function extractHtmlText(raw: string): string {
 
   const withBreaks = withoutNoise
     .replace(/<(br|hr)\s*\/?>/gi, '\n')
-    .replace(/<\/(p|div|section|article|main|aside|li|ul|ol|h1|h2|h3|h4|h5|h6|blockquote|pre)>/gi, '\n\n')
+    .replace(
+      /<\/(p|div|section|article|main|aside|li|ul|ol|h1|h2|h3|h4|h5|h6|blockquote|pre)>/gi,
+      '\n\n'
+    )
     .replace(/<li[^>]*>/gi, '\n- ')
     .replace(/<pre[^>]*>/gi, '\n\n')
     .replace(/<\/pre>/gi, '\n\n');

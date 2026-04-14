@@ -37,7 +37,7 @@ export async function listWikiTopics(): Promise<string[]> {
     const root = getGlobalWikiRoot();
     const entries = await readdir(root, { withFileTypes: true });
     return entries
-      .filter((entry) => entry.isDirectory())
+      .filter((entry) => entry.isDirectory() && !entry.name.startsWith('.') && !entry.name.startsWith('-'))
       .map((entry) => entry.name)
       .sort();
   } catch {
