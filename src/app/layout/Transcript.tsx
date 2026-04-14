@@ -1,25 +1,29 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import type { TranscriptEntry } from '../../types/app.js';
-import { theme } from '../theme.js';
+import { theme, getModeColor } from '../theme.js';
 
 interface TranscriptProps {
   items: TranscriptEntry[];
   streamingAssistantId?: string | null;
   showStreamingDraft: boolean;
+  mode: string;
 }
 
 export function Transcript({
   items,
   streamingAssistantId,
-  showStreamingDraft
+  showStreamingDraft,
+  mode
 }: TranscriptProps): React.JSX.Element {
+  const modeColor = getModeColor(mode);
+  const borderColor = mode === 'General' ? theme.muted : modeColor;
   return (
     <Box
       flexDirection="column"
       flexGrow={1}
       borderStyle="round"
-      borderColor={theme.muted}
+      borderColor={borderColor}
       paddingX={1}
     >
       {items.length <= 2 ? (
@@ -38,7 +42,7 @@ export function Transcript({
           marginTop={1}
           marginBottom={1}
         >
-          <Text color={getColor(item.kind)}>
+          <Text color={getColor(item.kind, modeColor)}>
             {item.title ? `${item.title}` : item.kind.toUpperCase()}
           </Text>
           <Text wrap="wrap">
@@ -75,12 +79,12 @@ function placeholderBody(
   return '';
 }
 
-function getColor(kind: TranscriptEntry['kind']): string {
+function getColor(kind: TranscriptEntry['kind'], modeColor: string): string {
   switch (kind) {
     case 'assistant':
-      return theme.accent;
+      return modeColor;
     case 'notice':
-      return theme.success;
+      return modeColor;
     case 'error':
       return theme.error;
     default:

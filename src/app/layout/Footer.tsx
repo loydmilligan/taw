@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import type { AppState } from '../../types/app.js';
-import { theme } from '../theme.js';
+import { theme, getModeColor } from '../theme.js';
 import { readResearchSources } from '../../core/research/store.js';
 
 interface FooterProps {
@@ -83,7 +83,7 @@ export function Footer({
 
   return (
     <Box flexDirection="column" marginTop={1}>
-      <Text color={theme.accent}>{nextAction}</Text>
+      <Text color={getModeColor(state.mode)}>{nextAction}</Text>
       {ui.showWarnings && warnings.length > 0 ? (
         <Text color={theme.warning}>
           Research warning: {warnings.join(' | ')}

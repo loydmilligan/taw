@@ -678,6 +678,7 @@ export function App({ state }: AppProps): React.JSX.Element {
         items={appState.transcript}
         streamingAssistantId={activeAssistantIdRef.current}
         showStreamingDraft={showStreamingDraft}
+        mode={appState.mode}
       />
       {commandPaletteOpen ? (
         <CommandPalette
