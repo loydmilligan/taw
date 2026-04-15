@@ -42,6 +42,10 @@ export function sendKeys(sessionId: string, text: string): void {
   execFileSync('tmux', ['send-keys', '-t', sessionId, text, 'Enter']);
 }
 
+export function sendText(sessionId: string, text: string): void {
+  execFileSync('tmux', ['send-keys', '-t', sessionId, '-l', text]);
+}
+
 export function sendKeyRaw(sessionId: string, keyName: string): void {
   execFileSync('tmux', ['send-keys', '-t', sessionId, keyName]);
 }

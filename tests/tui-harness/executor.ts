@@ -1,6 +1,7 @@
 import type { Step } from './schema.js';
 import {
   sendKeys,
+  sendText,
   sendKeyRaw,
   waitForText,
   capturePane,
@@ -22,7 +23,9 @@ export async function executeStep(
       return;
     }
     case 'type': {
-      sendKeys(sessionId, step.text);
+      sendText(sessionId, step.text);
+      await new Promise((r) => setTimeout(r, 75));
+      sendKeyRaw(sessionId, 'Enter');
       return;
     }
     case 'key': {
