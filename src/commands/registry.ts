@@ -24,6 +24,13 @@ import { statusCommand } from './status.js';
 import { summarizeSessionCommand } from './summarize-session.js';
 import { sessionUsageCommand } from './session-usage.js';
 import { workflowCommand } from './workflow.js';
+import { loadMapCommand } from './load-map.js';
+import { saveMapCommand } from './save-map.js';
+import { wikiItemCommand } from './wiki-item.js';
+import { wikiFinalizeItemCommand } from './wiki-finalize-item.js';
+import { wikiSaveItemCommand } from './wiki-save-item.js';
+import { wikiAddResearchCommand } from './wiki-add-research.js';
+import { wikiResolveItemCommand } from './wiki-resolve-item.js';
 import { wikiCommand } from './wiki.js';
 import type { CommandDefinition } from './types.js';
 
@@ -53,6 +60,13 @@ const coreCommands: CommandDefinition[] = [
   configCommand,
   initCommand,
   summarizeSessionCommand,
+  saveMapCommand,
+  loadMapCommand,
+  wikiItemCommand,
+  wikiFinalizeItemCommand,
+  wikiSaveItemCommand,
+  wikiAddResearchCommand,
+  wikiResolveItemCommand,
   exitCommand,
   statusCommand,
   wikiCommand

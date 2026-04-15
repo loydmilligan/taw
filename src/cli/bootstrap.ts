@@ -61,7 +61,8 @@ export async function bootstrapApp(
       lastRequest: summaries.at(-1) ?? null
     },
     openrouterAccount,
-    queuedInputs: [...(options.queuedInputs ?? []), ...(browserState?.queuedInputs ?? [])]
+    queuedInputs: [...(options.queuedInputs ?? []), ...(browserState?.queuedInputs ?? [])],
+    brainstormMap: null
   };
 }
 

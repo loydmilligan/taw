@@ -1,6 +1,6 @@
 import type { ProviderConfig } from '../types/provider.js';
 import type { SessionRecord } from '../types/session.js';
-import type { TranscriptEntry } from '../types/app.js';
+import type { BrainstormMap, MapPickerItem, TranscriptEntry } from '../types/app.js';
 import type { GlobalConfig, ProjectConfig } from '../services/config/schema.js';
 
 export interface CommandContext {
@@ -24,6 +24,8 @@ export interface CommandResult {
   provider?: string;
   model?: string;
   shouldExit?: boolean;
+  brainstormMap?: BrainstormMap | null;
+  openMapPicker?: MapPickerItem[] | null;
   entries: TranscriptEntry[];
 }
 

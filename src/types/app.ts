@@ -11,6 +11,33 @@ export interface TranscriptEntry {
   draftState?: 'pending' | 'complete' | 'interrupted' | 'failed';
 }
 
+export type OpenItemTag = 'RESEARCH' | 'VALIDATE' | 'DESIGN' | 'DECIDE';
+
+export interface BrainstormOpenItem {
+  id: string;
+  text: string;
+  tag: OpenItemTag;
+  status: 'open' | 'in-progress' | 'resolved';
+  wikiArtifact?: string;   // path to the artifact created for this item
+  spawnedFrom?: string;    // id of the parent item that created this one
+}
+
+export interface MapPickerItem {
+  filePath: string;
+  topic: string;
+  sessionType: string;
+  created: string;
+  openItems: BrainstormOpenItem[];
+}
+
+export interface BrainstormMap {
+  topic: string;
+  sessionType: string;
+  openItems: BrainstormOpenItem[];
+  artifactPath: string;
+  savedAt: string;
+}
+
 export interface AppState {
   mode: string;
   phase: AppPhase;
@@ -32,4 +59,5 @@ export interface AppState {
     error: string | null;
   } | null;
   queuedInputs: string[];
+  brainstormMap: BrainstormMap | null;
 }

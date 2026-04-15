@@ -3,6 +3,10 @@ import { Box, useApp, useInput } from 'ink';
 import { bootstrapApp } from '../cli/bootstrap.js';
 import type { AppState, TranscriptEntry } from '../types/app.js';
 import { Header } from './layout/Header.js';
+import { MapPanel } from './layout/MapPanel.js';
+import { MapPicker, buildActionsForMap } from './layout/MapPicker.js';
+import type { MapPickerState } from './layout/MapPicker.js';
+import type { MapPickerItem } from '../types/app.js';
 import { Transcript } from './layout/Transcript.js';
 import { Footer } from './layout/Footer.js';
 import {
@@ -45,6 +49,8 @@ export function App({ state }: AppProps): React.JSX.Element {
   const [selectedSuggestion, setSelectedSuggestion] = React.useState(0);
   const [showStreamingDraft, setShowStreamingDraft] = React.useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = React.useState(false);
+  const [showMapPanel, setShowMapPanel] = React.useState(false);
+  const [mapPicker, setMapPicker] = React.useState<MapPickerState | null>(null);
   const [selectedPaletteIndex, setSelectedPaletteIndex] = React.useState(0);
   const [commandPaletteQuery, setCommandPaletteQuery] = React.useState('');
   const [historyIndex, setHistoryIndex] = React.useState<number | null>(null);
@@ -85,11 +91,13 @@ export function App({ state }: AppProps): React.JSX.Element {
   );
 
   useInput((value, key) => {
-    if (
-      key.ctrl &&
-      (value.toLowerCase() === 'p' || value.toLowerCase() === 'l')
-    ) {
+    if (key.ctrl && value.toLowerCase() === 'l') {
       setCommandPaletteOpen((current) => !current);
+      return;
+    }
+
+    if (key.ctrl && value.toLowerCase() === 'p') {
+      setShowMapPanel((current) => !current);
       return;
     }
 
@@ -101,6 +109,67 @@ export function App({ state }: AppProps): React.JSX.Element {
         }
         return next;
       });
+      return;
+    }
+
+    // ── Map picker input ────────────────────────────────────────────────────
+    if (mapPicker !== null) {
+      if (key.escape) {
+        if (mapPicker.phase === 'actions') {
+          // Back to map selection
+          setMapPicker((current) =>
+            current
+              ? { ...current, phase: 'selecting', selectedMap: null, actions: [], actionIndex: 0 }
+              : null
+          );
+        } else {
+          setMapPicker(null);
+        }
+        return;
+      }
+
+      if (key.upArrow) {
+        setMapPicker((current) => {
+          if (!current) return null;
+          if (current.phase === 'selecting') {
+            const next = (current.selectedIndex - 1 + current.maps.length) % current.maps.length;
+            return { ...current, selectedIndex: next };
+          }
+          const next = (current.actionIndex - 1 + current.actions.length) % current.actions.length;
+          return { ...current, actionIndex: next };
+        });
+        return;
+      }
+
+      if (key.downArrow) {
+        setMapPicker((current) => {
+          if (!current) return null;
+          if (current.phase === 'selecting') {
+            const next = (current.selectedIndex + 1) % current.maps.length;
+            return { ...current, selectedIndex: next };
+          }
+          const next = (current.actionIndex + 1) % current.actions.length;
+          return { ...current, actionIndex: next };
+        });
+        return;
+      }
+
+      if (key.return) {
+        if (mapPicker.phase === 'selecting') {
+          const selectedMap = mapPicker.maps[mapPicker.selectedIndex];
+          if (selectedMap) {
+            void selectPickerMap(selectedMap);
+          }
+        } else if (mapPicker.phase === 'actions') {
+          const action = mapPicker.actions[mapPicker.actionIndex];
+          if (action) {
+            void executePickerAction(action.commands);
+          }
+        }
+        return;
+      }
+
+      // Swallow all other keys while picker is open
       return;
     }
 
@@ -478,8 +547,35 @@ export function App({ state }: AppProps): React.JSX.Element {
             : result.projectConfig,
         session: result.session ?? current.session,
         queuedInputs: [...(result.queuedInputs ?? []), ...current.queuedInputs],
-        transcript: [...current.transcript, ...result.entries]
+        transcript: [...current.transcript, ...result.entries],
+        brainstormMap:
+          result.brainstormMap !== undefined
+            ? result.brainstormMap
+            : current.brainstormMap
       }));
+
+      // Auto-show the panel when a map is first loaded
+      if (result.brainstormMap != null) {
+        setShowMapPanel(true);
+      }
+
+      // Open the map picker when a command returns available maps
+      if (result.openMapPicker != null && result.openMapPicker.length > 0) {
+        const maps = result.openMapPicker;
+        if (maps.length === 1 && maps[0]) {
+          // Single map — skip selection phase, go straight to actions
+          void selectPickerMap(maps[0]);
+        } else {
+          setMapPicker({
+            maps,
+            selectedIndex: 0,
+            phase: 'selecting',
+            selectedMap: null,
+            actionIndex: 0,
+            actions: []
+          });
+        }
+      }
 
       await refreshUsage(result.session ?? appStateRef.current.session);
 
@@ -626,6 +722,63 @@ export function App({ state }: AppProps): React.JSX.Element {
     }
   }
 
+  async function selectPickerMap(map: MapPickerItem): Promise<void> {
+    // Load the map into brainstormMap state, show panel, advance to action phase
+    try {
+      const { readFile } = await import('node:fs/promises');
+      const content = await readFile(map.filePath, 'utf8');
+      // Parse using the same regex as load-map
+      const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
+      if (fmMatch) {
+        const fm = fmMatch[1];
+        const topic = fm.match(/^topic:\s*"([^"]*)"/m)?.[1] ?? '';
+        const sessionType = fm.match(/^session_type:\s*(\S+)/m)?.[1] ?? '';
+        const artifactPath = fm.match(/^map_artifact:\s*"([^"]*)"/m)?.[1] ?? '';
+        const savedAt = fm.match(/^created:\s*(\S+)/m)?.[1] ?? '';
+        const openItems: import('../types/app.js').BrainstormOpenItem[] = [];
+        const itemRegex = /-\s+id:\s*(\S+)\s*\n\s*text:\s*"([^"]*)"\s*\n\s*tag:\s*(\S+)\s*\n\s*status:\s*(\S+)/g;
+        let m;
+        while ((m = itemRegex.exec(fm)) !== null) {
+          openItems.push({
+            id: m[1],
+            text: m[2],
+            tag: m[3] as import('../types/app.js').OpenItemTag,
+            status: m[4] as 'open' | 'in-progress' | 'resolved'
+          });
+        }
+        const brainstormMap = { topic, sessionType, openItems, artifactPath, savedAt };
+        setAppState((current) => ({ ...current, brainstormMap }));
+        setShowMapPanel(true);
+      }
+    } catch {
+      // file read failed — still advance to actions
+    }
+
+    const actions = buildActionsForMap(map);
+    setMapPicker((current) =>
+      current
+        ? { ...current, phase: 'actions', selectedMap: map, actions, actionIndex: 0 }
+        : null
+    );
+  }
+
+  async function executePickerAction(commands: string[]): Promise<void> {
+    setMapPicker(null);
+    if (commands.length === 0) return;
+
+    // Run first command immediately, queue the rest
+    const [first, ...rest] = commands;
+    if (rest.length > 0) {
+      setAppState((current) => ({
+        ...current,
+        queuedInputs: [...rest, ...current.queuedInputs]
+      }));
+    }
+    if (first) {
+      await runCommand(first);
+    }
+  }
+
   function updateInputState(
     updater: (current: InputState) => InputState
   ): void {
@@ -674,12 +827,20 @@ export function App({ state }: AppProps): React.JSX.Element {
   return (
     <Box flexDirection="column" paddingX={1} paddingY={1}>
       <Header state={appState} />
-      <Transcript
-        items={appState.transcript}
-        streamingAssistantId={activeAssistantIdRef.current}
-        showStreamingDraft={showStreamingDraft}
-        mode={appState.mode}
-      />
+      <Box flexDirection="row" flexGrow={1}>
+        <Transcript
+          items={appState.transcript}
+          streamingAssistantId={activeAssistantIdRef.current}
+          showStreamingDraft={showStreamingDraft}
+          mode={appState.mode}
+        />
+        {appState.brainstormMap != null && showMapPanel ? (
+          <MapPanel map={appState.brainstormMap} />
+        ) : null}
+      </Box>
+      {mapPicker !== null ? (
+        <MapPicker state={mapPicker} />
+      ) : null}
       {commandPaletteOpen ? (
         <CommandPalette
           items={paletteItems}
