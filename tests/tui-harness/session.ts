@@ -51,11 +51,31 @@ export function sendKeyRaw(sessionId: string, keyName: string): void {
 }
 
 export function capturePane(sessionId: string): string {
-  return execFileSync(
-    'tmux',
-    ['capture-pane', '-t', sessionId, '-p', '-J', '-S', '-200'],
-    { encoding: 'utf8' }
-  );
+  try {
+    return execFileSync(
+      'tmux',
+      ['capture-pane', '-t', sessionId, '-p', '-J', '-S', '-200'],
+      { encoding: 'utf8' }
+    );
+  } catch (e) {
+    // Session may have exited (e.g. TAW crashed or /exit completed). Return empty
+    // rather than throwing so callers can still build a trace from whatever ran.
+    return `[capturePane failed: ${e instanceof Error ? e.message : String(e)}]`;
+  }
+}
+
+// Like capturePane but preserves ANSI escape codes (-e flag).
+// Useful for saving a "screenshot" that can be rendered with an ANSI viewer.
+export function capturePaneAnsi(sessionId: string): string {
+  try {
+    return execFileSync(
+      'tmux',
+      ['capture-pane', '-t', sessionId, '-p', '-e', '-J', '-S', '-200'],
+      { encoding: 'utf8' }
+    );
+  } catch {
+    return '';
+  }
 }
 
 export async function waitForText(

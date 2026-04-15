@@ -70,4 +70,41 @@ describe('TestSuiteSchema', () => {
     const result = TestSuiteSchema.parse({ suite: 'no-timeout', tests: [] });
     expect(result.timeout).toBeUndefined();
   });
+
+  it('defaults ai_review to never when omitted', () => {
+    const result = TestSuiteSchema.parse({ suite: 's', tests: [] });
+    expect(result.ai_review).toBe('never');
+  });
+
+  it('parses all valid ai_review trigger values', () => {
+    for (const trigger of ['never', 'on_failure', 'on_success', 'always'] as const) {
+      const result = TestSuiteSchema.parse({ suite: 's', ai_review: trigger, tests: [] });
+      expect(result.ai_review).toBe(trigger);
+    }
+  });
+
+  it('accepts ai_review_model override at suite level', () => {
+    const result = TestSuiteSchema.parse({
+      suite: 's',
+      ai_review: 'on_failure',
+      ai_review_model: 'anthropic/claude-haiku-4-5',
+      tests: []
+    });
+    expect(result.ai_review_model).toBe('anthropic/claude-haiku-4-5');
+  });
+
+  it('accepts per-test ai_review override', () => {
+    const result = TestSuiteSchema.parse({
+      suite: 's',
+      ai_review: 'never',
+      tests: [{ name: 't', ai_review: 'always', steps: [] }]
+    });
+    expect(result.tests[0]!.ai_review).toBe('always');
+  });
+
+  it('rejects an invalid ai_review value', () => {
+    expect(() =>
+      TestSuiteSchema.parse({ suite: 's', ai_review: 'sometimes', tests: [] })
+    ).toThrow();
+  });
 });
