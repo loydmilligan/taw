@@ -1,0 +1,22 @@
+suite: commands
+description: Exercises keyless slash commands and asserts response text
+timeout: 20000
+tests:
+  - name: /help lists commands
+    fixture: /home/loydmilligan/Projects/taw/qa-fixtures/tui-harness-empty
+    steps:
+      - action: launch
+      - action: wait
+        for: "Mode General"
+        timeout: 15000
+      - action: type
+        text: "/help"
+      - action: wait
+        for: "Command Help"
+        timeout: 5000
+      - action: assert
+        contains: "Command Help"
+      - action: type
+        text: "/exit"
+      - action: sleep
+        ms: 500

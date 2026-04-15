@@ -1,0 +1,22 @@
+suite: mode-transitions
+description: Verifies header Mode label updates when user enters a non-default mode
+timeout: 25000
+tests:
+  - name: enters brainstorm mode
+    fixture: /home/loydmilligan/Projects/taw/qa-fixtures/tui-harness-empty
+    steps:
+      - action: launch
+      - action: wait
+        for: "Mode General"
+        timeout: 15000
+      - action: type
+        text: "/brainstorm"
+      - action: wait
+        for: "Mode Brainstorm"
+        timeout: 8000
+      - action: assert
+        contains: "Mode Brainstorm"
+      - action: type
+        text: "/exit"
+      - action: sleep
+        ms: 500
