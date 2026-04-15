@@ -1,0 +1,27 @@
+suite: pipeline-e2e
+description: Full map-to-vault pipeline — /commit-map writes vault and shows success notice in TUI
+timeout: 30000
+ai_review: never
+
+tests:
+  - name: commit-map succeeds against pre-built fixture map
+    description: Given a session with a fixture map file containing a resolved item, /commit-map writes the vault index and displays the success notice
+    fixture: /home/loydmilligan/Projects/taw/qa-fixtures/tui-harness-with-map
+    steps:
+      - action: launch
+      - action: wait
+        for: "Mode General"
+        timeout: 15000
+      - action: type
+        text: "/commit-map"
+      - action: wait
+        for: "Map Committed to Vault"
+        timeout: 10000
+      - action: assert
+        contains: "Map Committed to Vault"
+      - action: assert
+        contains: "Harness E2E Topic"
+      - action: type
+        text: "/exit"
+      - action: sleep
+        ms: 500
