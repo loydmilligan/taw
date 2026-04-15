@@ -11,3 +11,6 @@ coverage
 
 # GSD planning docs (local only)
 .planning/
+
+# TUI harness test run artifacts (generated per-run output)
+test-artifacts/
