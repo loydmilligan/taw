@@ -16,6 +16,7 @@
     "dev": "tsx src/cli/entry.tsx",
     "bridge:dev": "tsx src/cli/bridge.ts",
     "research:harness": "tsx src/cli/research-harness.ts",
+    "test:tui": "tsx tests/tui-harness/runner.ts",
     "searxng:up": "docker compose -f infra/docker-compose.yml up -d searxng",
     "searxng:down": "docker compose -f infra/docker-compose.yml stop searxng",
     "searxng:status": "docker compose -f infra/docker-compose.yml ps",
@@ -45,6 +46,7 @@
     "prettier": "^3.6.2",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "yaml": "2.8.3"
   }
 }
