@@ -43,7 +43,7 @@ function parseMapFileContent(content: string, filePath: string): MapFileData {
 
   const openItems: BrainstormOpenItem[] = [];
   // Match each item block (handles optional fields)
-  const itemBlockRegex = /- id:\s*(\S+)\n([\s\S]*?)(?=\n- id:|\n---|\n$|$)/g;
+  const itemBlockRegex = /- id:\s*(\S+)\n([\s\S]*?)(?=\n\s*- id:|\n---|\n$|$)/g;
   let blockMatch;
   while ((blockMatch = itemBlockRegex.exec(fm)) !== null) {
     const id = blockMatch[1];
