@@ -1028,6 +1028,9 @@ async function runAppCommand(
   appState.session = result.session ?? appState.session;
   appState.queuedInputs = [...(result.queuedInputs ?? []), ...appState.queuedInputs];
   appState.transcript = [...appState.transcript, ...result.entries];
+  if (result.brainstormMap !== undefined) {
+    appState.brainstormMap = result.brainstormMap;
+  }
 
   const message =
     result.entries.at(-1)?.body ??

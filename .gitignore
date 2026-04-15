@@ -8,3 +8,6 @@ dist
 .env.*
 coverage
 *.log
+
+# GSD planning docs (local only)
+.planning/

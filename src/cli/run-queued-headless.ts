@@ -145,7 +145,9 @@ async function runCommandHeadless(
         : result.projectConfig,
     session: result.session ?? state.session,
     queuedInputs: [...(result.queuedInputs ?? []), ...state.queuedInputs],
-    transcript: [...transcript, ...result.entries]
+    transcript: [...transcript, ...result.entries],
+    brainstormMap:
+      result.brainstormMap !== undefined ? result.brainstormMap : state.brainstormMap
   };
 }
 

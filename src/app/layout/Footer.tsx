@@ -120,7 +120,8 @@ export function Footer({
       {ui.showHints ? (
         <Text color={theme.muted}>
           Left/Right move Home/End Ctrl+A/Ctrl+E ends Up/Down history or
-          suggestions Esc interrupt/close Ctrl+L palette Ctrl+T live-draft{' '}
+          suggestions Esc interrupt/close Ctrl+L palette Ctrl+T live-draft
+          Ctrl+P map panel{' '}
           {commandPaletteOpen ? ' Palette open' : ''} Ctrl+C exit
         </Text>
       ) : null}

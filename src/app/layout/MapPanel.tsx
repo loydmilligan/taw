@@ -14,12 +14,11 @@ const TAG_ABBREV: Record<string, string> = {
   DECIDE: 'J'
 };
 
-// Only RESEARCH items are currently actionable; others are grayed out
 const TAG_ACTIVE: Record<string, boolean> = {
   RESEARCH: true,
-  VALIDATE: false,
-  DESIGN: false,
-  DECIDE: false
+  VALIDATE: true,
+  DESIGN: true,
+  DECIDE: true
 };
 
 const BRAINSTORM_COLOR = '#d946ef';
@@ -65,7 +64,7 @@ export function MapPanel({ map }: MapPanelProps): React.JSX.Element {
   const displayType = truncate(map.sessionType, CONTENT_WIDTH);
   const progressLine = `${resolvedCount}/${totalCount} resolved (${progressPct}%)`;
 
-  // Group items: RESEARCH first (active), then others (grayed)
+  // Group items: RESEARCH first, then DECIDE/DESIGN/VALIDATE
   const researchItems = map.openItems.filter((i) => i.tag === 'RESEARCH');
   const otherItems = map.openItems.filter((i) => i.tag !== 'RESEARCH');
   const orderedItems = [...researchItems, ...otherItems];
@@ -78,11 +77,7 @@ export function MapPanel({ map }: MapPanelProps): React.JSX.Element {
     const hint =
       tag === 'RESEARCH'
         ? '/research'
-        : tag === 'VALIDATE'
-          ? 'validate offline'
-          : tag === 'DESIGN'
-            ? 'design session'
-            : 'commit choice';
+        : '/wiki-item';
     return { abbrev, hint, active };
   });
 

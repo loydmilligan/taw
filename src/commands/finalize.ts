@@ -10,6 +10,37 @@ import { updateSessionMetadata } from '../core/sessions/session-manager.js';
 import { createId } from '../utils/ids.js';
 import type { CommandDefinition } from './types.js';
 
+const BRAINSTORM_FINALIZE_QUEUE: string[] = [
+  // Job 2: Tag assignment
+  [
+    'The brainstorm map has been saved. Now review the Key Questions / Open Items section.',
+    '',
+    'For each item in that section:',
+    '1. Determine if it is a genuine open item (the user does not yet know what to do — needs more information or work before the path is clear).',
+    '   OR a recommendation (path is clear, just needs doing) — state it plainly.',
+    '   OR resolved (already answered in the conversation) — note it as resolved.',
+    '2. For each genuine open item, assign exactly one tag:',
+    '   [RESEARCH] — an answer exists in the world, findable via search or reading',
+    '   [VALIDATE] — a hypothesis needing real-world signal to confirm or deny (market, behavior, people, or self)',
+    '   [DESIGN] — multiple viable approaches exist; needs design thinking to choose or invent a path',
+    '   [DECIDE] — options are clear; needs a judgment call and commitment',
+    '',
+    'Output the tagged Key Questions / Open Items section only. Do not reprint the full map.'
+  ].join('\n'),
+
+  // Job 3: Research transition suggestion
+  [
+    'Now list any [RESEARCH] items from the tagging above as a numbered list.',
+    'Then add exactly one line:',
+    '"To take these into Research, run: /research tech <topic>"',
+    'Replace <topic> with a 2–4 word description of the brainstorm subject.',
+    'If there are no [RESEARCH] items, skip this step entirely — output nothing.'
+  ].join('\n'),
+
+  // Job 8: Save the map file with YAML frontmatter and parsed open items
+  '/save-map'
+];
+
 export const finalizeCommand: CommandDefinition = {
   name: 'finalize',
   description:
@@ -79,9 +110,11 @@ export const finalizeCommand: CommandDefinition = {
       };
     }
 
+    const isBrainstormPhase2 = context.mode === 'Brainstorm Phase 2';
+
     const artifactContent = context.mode.startsWith('Research ')
       ? await buildResearchFinalizeContent(context, latestAssistant.body)
-      : context.mode === 'Brainstorm Phase 2'
+      : isBrainstormPhase2
         ? cleanPhase2Artifact(latestAssistant.body)
         : latestAssistant.body;
     const artifact = await createModeArtifact(
@@ -109,9 +142,12 @@ export const finalizeCommand: CommandDefinition = {
           id: createId('finalize-exit'),
           kind: 'notice',
           title: 'Mode Exited',
-          body: 'Returned to General mode after saving the artifact.'
+          body: isBrainstormPhase2
+            ? 'Returned to General mode. Running tag assignment on the saved map...'
+            : 'Returned to General mode after saving the artifact.'
         }
-      ]
+      ],
+      ...(isBrainstormPhase2 ? { queuedInputs: BRAINSTORM_FINALIZE_QUEUE } : {})
     };
   }
 };

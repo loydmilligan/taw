@@ -1,17 +1,3 @@
-const brainstormTemplate = [
-  '# Project Brief',
-  '',
-  '## Summary',
-  '## Problem',
-  '## Goals',
-  '## Non-Goals',
-  '## Constraints',
-  '## Assumptions',
-  '## Proposed Approach',
-  '## Risks',
-  '## Suggested Next Steps'
-].join('\n');
-
 const workflowReviewTemplate = [
   '# Workflow Review',
   '',
@@ -106,9 +92,12 @@ export function buildModeSystemPrompt(
       '',
       'BEHAVIOR:',
       '- Ask probing questions. Challenge assumptions gently. Offer reframes the user may not have considered.',
+      '- Ask at most one or two focused questions per turn. Prioritize the most important unknown first. Build understanding conversationally, not through front-loaded question lists.',
       '- Do not rush to solutions. Stay in exploration mode.',
       '- When you have enough context to map the space, say something like: "I think I have enough to map this — say \'map it\' to move to Phase 2, or keep exploring if there is more to uncover."',
       '- If the user says "map it", treat it as if they ran /brainstorm phase2.',
+      '- If the topic is clearly a learning-concept (the user wants to understand something deeply, not make a decision or diagnose a problem), do not propose Phase 2. Instead say: "This looks like a learning topic. I can generate a structured learning plan directly — say \'learning plan\' to produce it, or keep exploring."',
+      '- If the user says "learning plan", generate a structured plan with exactly these sections: **What to understand first** (the core model — how does this actually work?) | **Variants and contrasting cases** (how does it vary? what are the alternatives?) | **Where it breaks or fails** (edge cases, failure modes, known limitations) | **Key questions to research** (the remaining unknowns worth investigating). End with: "Run /research tech <topic> to begin researching the open questions."',
       '',
       'If there is a RETURNING TO PHASE 1 block in the conversation above, explicitly acknowledge the mapping work already done before continuing exploration. Say something like: "Keeping our current map in mind — [brief summary of what is already mapped] — let\'s dig into [the specific gap]."',
       '',
