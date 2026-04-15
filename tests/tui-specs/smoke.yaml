@@ -1,0 +1,38 @@
+suite: smoke
+description: Basic launch and exit verification
+timeout: 20000
+tests:
+  - name: launches in general mode
+    description: TAW starts and renders header with Mode General + State General
+    fixture: /home/loydmilligan/Projects/taw/qa-fixtures/tui-harness-empty
+    steps:
+      - action: launch
+      - action: wait
+        for: "TAW "
+        timeout: 15000
+      - action: wait
+        for: "Mode General"
+        timeout: 5000
+      - action: assert
+        contains: "State General"
+      - action: assert
+        contains: "Phase idle"
+      - action: type
+        text: "/exit"
+      - action: sleep
+        ms: 500
+  - name: exits cleanly on /exit
+    description: Follow-up test — fresh session, launch and immediately /exit
+    fixture: /home/loydmilligan/Projects/taw/qa-fixtures/tui-harness-empty
+    steps:
+      - action: launch
+      - action: wait
+        for: "TAW "
+        timeout: 15000
+      - action: type
+        text: "/exit"
+      - action: sleep
+        ms: 1000
+      - action: assert
+        not: true
+        contains: "Phase thinking"
