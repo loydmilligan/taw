@@ -74,9 +74,50 @@ describe('commitMapCommand integration', () => {
     }
   });
 
-  // Task 2 fills test cases here
-  it.todo('creates index.md at expected path on success');
-  it.todo('index.md contains YAML frontmatter with topic and resolved_count');
-  it.todo('index.md contains [[wikilink]] for each resolved item with wiki_artifact');
-  it.todo('returns error entry with title "No Map Found" when no map file exists');
+  it('creates index.md at expected path on success', async () => {
+    const result = await commitMapCommand.run(
+      { name: 'commit-map', args: [], raw: '/commit-map' },
+      context
+    );
+    expect(result.entries[0]?.kind).toBe('notice');
+    expect(result.entries[0]?.title).toBe('Map Committed to Vault');
+
+    const indexPath = path.join(tempDir, '.config', 'taw', 'wiki', 'E2E Test Topic', 'index.md');
+    const content = await readFile(indexPath, 'utf8');
+    expect(content.length).toBeGreaterThan(0);
+  });
+
+  it('index.md contains YAML frontmatter with topic and resolved_count', async () => {
+    await commitMapCommand.run(
+      { name: 'commit-map', args: [], raw: '/commit-map' },
+      context
+    );
+    const indexPath = path.join(tempDir, '.config', 'taw', 'wiki', 'E2E Test Topic', 'index.md');
+    const content = await readFile(indexPath, 'utf8');
+    expect(content.startsWith('---')).toBe(true);
+    expect(content).toContain('topic: "E2E Test Topic"');
+    expect(content).toContain('resolved_count: 1');
+  });
+
+  it('index.md contains [[wikilink]] for each resolved item with wiki_artifact', async () => {
+    await commitMapCommand.run(
+      { name: 'commit-map', args: [], raw: '/commit-map' },
+      context
+    );
+    const indexPath = path.join(tempDir, '.config', 'taw', 'wiki', 'E2E Test Topic', 'index.md');
+    const content = await readFile(indexPath, 'utf8');
+    expect(content).toContain('[[fake-decision]]');
+    // The open RESEARCH item has no wiki_artifact, so no wikilink for it
+    expect(content).not.toContain('Research caching strategies');
+  });
+
+  it('returns error entry with title "No Map Found" when no map file exists', async () => {
+    await rm(path.join(context.session.artifactsDir, 'map-data.md'));
+    const result = await commitMapCommand.run(
+      { name: 'commit-map', args: [], raw: '/commit-map' },
+      context
+    );
+    expect(result.entries[0]?.kind).toBe('error');
+    expect(result.entries[0]?.title).toBe('No Map Found');
+  });
 });
