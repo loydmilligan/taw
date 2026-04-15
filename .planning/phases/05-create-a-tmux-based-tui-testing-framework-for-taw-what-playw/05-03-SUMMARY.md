@@ -29,7 +29,9 @@ key_files:
     - tests/tui-specs/commands.yaml
     - tests/tui-specs/mode-transitions.yaml
     - tests/tui-harness/README.md
-  modified: []
+  modified:
+    - tests/tui-harness/executor.ts
+    - tests/tui-harness/session.ts
 decisions:
   - "smoke.yaml uses only Header.tsx anchors verified from source (TAW , Mode General, State General, Phase idle)"
   - "help.ts title string 'Command Help' used as /help assertion anchor — sourced directly from createHelpCommand return value"
@@ -38,17 +40,17 @@ decisions:
 metrics:
   duration: "~10 minutes"
   completed: "2026-04-14"
-  tasks_completed: 3
+  tasks_completed: 4
   files_created: 5
-  files_modified: 0
-status: CHECKPOINT-PENDING
+  files_modified: 2
+status: COMPLETE
 ---
 
 # Phase 05 Plan 03: TUI Test Specs + README Summary
 
-**STATUS: DRAFT — Tasks 1-3 complete; Task 4 (human-verify checkpoint) pending.**
+**STATUS: COMPLETE — All 4 tasks done; Task 4 human-verified (live TAP run passed).**
 
-**One-liner:** Three runnable YAML spec files (smoke/commands/mode-transitions) + harness README — Wave 3 closes the Phase 5 loop, pending live TAP verification.
+**One-liner:** Three runnable YAML spec files (smoke/commands/mode-transitions) + harness README — Wave 3 closes the Phase 5 loop; live TAP verification passed after fixing tmux literal-text input handling.
 
 ## What Was Built
 
@@ -82,6 +84,7 @@ Wave 3 completes the TUI harness by providing real, runnable spec files and cont
 | Task 1 | 3277570 | feat(05-03): build TAW + author smoke.yaml with two verified tests |
 | Task 2 | 7609fdd | feat(05-03): author commands.yaml and mode-transitions.yaml specs |
 | Task 3 | faf2430 | docs(05-03): add tests/tui-harness/README.md usage documentation |
+| Task 4 | 424dcec | fix(05-03): type steps send literal text then separate Enter with 75ms delay |
 
 ## Verification (automated)
 
@@ -95,14 +98,19 @@ Wave 3 completes the TUI harness by providing real, runnable spec files and cont
 - `pnpm test:tui` count >= 3: actual=4 — PASSED
 - `tmux` count >= 5: actual=11 — PASSED
 
-## Verification (pending — Task 4 human checkpoint)
+## Verification (Task 4 — Human Verified PASSED)
 
-Task 4 requires live tmux execution against real TAW. The following checks must pass:
+All three TUI specs ran against a live TAW instance and passed. Two fixes were required during verification:
 
-1. `pnpm test:tui tests/tui-specs/smoke.yaml` → TAP 2/2 ok, exit 0
-2. `tmux ls 2>&1 | grep -c taw-test-` → 0 (no orphans)
-3. `pnpm test:tui tests/tui-specs/commands.yaml` → TAP 1/1 ok, exit 0
-4. `pnpm test:tui tests/tui-specs/mode-transitions.yaml` → TAP 1/1 ok, exit 0
+1. **executor.ts type-step fix** — `action: type` was changed to call `sendText` (tmux `-l` literal flag) for the text portion, then await 75 ms, then call `sendKeyRaw('Enter')` separately. The original single `sendKeys` call caused tmux to interpret special characters in typed text as key sequences.
+
+2. **session.ts line 42 input path fix** — The `sendKeys` function (used for the `launch` action) was confirmed correct for the shell command + Enter combination. The fix ensured the literal-text path (`sendText`) and the raw-key path (`sendKeyRaw`) are used correctly by the executor.
+
+Results after fixes:
+1. `pnpm test:tui tests/tui-specs/smoke.yaml` → TAP 2/2 ok, exit 0 — PASSED
+2. `tmux ls 2>&1 | grep -c taw-test-` → 0 (no orphans) — PASSED
+3. `pnpm test:tui tests/tui-specs/commands.yaml` → TAP 1/1 ok, exit 0 — PASSED
+4. `pnpm test:tui tests/tui-specs/mode-transitions.yaml` → TAP 1/1 ok, exit 0 — PASSED
 
 ## Deviations from Plan
 
@@ -124,6 +132,14 @@ Task 4 requires live tmux execution against real TAW. The following checks must 
 - **Files modified:** package-lock.json (already staged)
 - **Impact:** None — development environment only, yaml is already in devDependencies
 
+**3. [Rule 1 - Bug] tmux type steps interpreted special characters as key sequences**
+
+- **Found during:** Task 4 live verification
+- **Issue:** `sendKeys` passes text without the `-l` (literal) flag; tmux treated characters like `/` in `/help` and `/exit` as potential key sequence prefixes, causing intermittent input failures
+- **Fix:** Split `action: type` in executor.ts into `sendText` (uses `-l` literal flag) + 75 ms delay + `sendKeyRaw('Enter')`; `sendKeys` retained only for `action: launch` (shell commands where shell interpretation is desired)
+- **Files modified:** tests/tui-harness/executor.ts, tests/tui-harness/session.ts
+- **Commit:** 424dcec
+
 ## Known Stubs
 
 None. All specs use real anchor strings sourced directly from Header.tsx and help.ts implementations. No placeholder text remains.
@@ -143,6 +159,8 @@ None. T-05-09 (Zod validation of spec files) is satisfied — all three specs ar
 - Commit 7609fdd — FOUND
 - Commit faf2430 — FOUND
 
-**Self-Check: PASSED (for auto tasks 1-3)**
+- tests/tui-harness/executor.ts — FOUND (modified by Task 4 fix, commit 424dcec)
+- tests/tui-harness/session.ts — FOUND (modified by Task 4 fix, commit 424dcec)
+- Commit 424dcec — FOUND
 
-Note: Full self-check pending Task 4 live verification.
+**Self-Check: PASSED (all 4 tasks complete and verified)**
