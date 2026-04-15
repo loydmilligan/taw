@@ -16,6 +16,7 @@ import {
 import { InputBar } from './components/InputBar.js';
 import { commandRegistry, getCommandDefinition } from '../commands/registry.js';
 import { isSlashCommand, parseCommand } from '../commands/parser.js';
+import { readMapFile, mapDataToBrainstormMap } from '../commands/map-file.js';
 import { summarizeSessionUsage } from '../core/telemetry/derivation.js';
 import { readTelemetrySummaries } from '../core/telemetry/store.js';
 import { createId } from '../utils/ids.js';
@@ -725,33 +726,12 @@ export function App({ state }: AppProps): React.JSX.Element {
   async function selectPickerMap(map: MapPickerItem): Promise<void> {
     // Load the map into brainstormMap state, show panel, advance to action phase
     try {
-      const { readFile } = await import('node:fs/promises');
-      const content = await readFile(map.filePath, 'utf8');
-      // Parse using the same regex as load-map
-      const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
-      if (fmMatch) {
-        const fm = fmMatch[1];
-        const topic = fm.match(/^topic:\s*"([^"]*)"/m)?.[1] ?? '';
-        const sessionType = fm.match(/^session_type:\s*(\S+)/m)?.[1] ?? '';
-        const artifactPath = fm.match(/^map_artifact:\s*"([^"]*)"/m)?.[1] ?? '';
-        const savedAt = fm.match(/^created:\s*(\S+)/m)?.[1] ?? '';
-        const openItems: import('../types/app.js').BrainstormOpenItem[] = [];
-        const itemRegex = /-\s+id:\s*(\S+)\s*\n\s*text:\s*"([^"]*)"\s*\n\s*tag:\s*(\S+)\s*\n\s*status:\s*(\S+)/g;
-        let m;
-        while ((m = itemRegex.exec(fm)) !== null) {
-          openItems.push({
-            id: m[1],
-            text: m[2],
-            tag: m[3] as import('../types/app.js').OpenItemTag,
-            status: m[4] as 'open' | 'in-progress' | 'resolved'
-          });
-        }
-        const brainstormMap = { topic, sessionType, openItems, artifactPath, savedAt };
-        setAppState((current) => ({ ...current, brainstormMap }));
-        setShowMapPanel(true);
-      }
+      const mapData = await readMapFile(map.filePath);
+      const brainstormMap = mapDataToBrainstormMap(mapData);
+      setAppState((current) => ({ ...current, brainstormMap }));
+      setShowMapPanel(true);
     } catch {
-      // file read failed — still advance to actions
+      // file read/parse failed — still advance to actions phase below
     }
 
     const actions = buildActionsForMap(map);
