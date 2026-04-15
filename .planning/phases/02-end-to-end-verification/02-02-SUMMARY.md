@@ -145,3 +145,16 @@ Until the harness runner is updated to redirect HOME (tracked as future work).
 ---
 *Phase: 02-end-to-end-verification*
 *Completed: 2026-04-15*
+
+## Self-Check: PASSED
+
+All created files exist at expected paths. All task commits verified in git log.
+
+- tests/tui-specs/pipeline-e2e.yaml: FOUND
+- qa-fixtures/tui-harness-with-map/.ai/config.json: FOUND
+- qa-fixtures/tui-harness-with-map/.ai/sessions/2026-04-15-e2e-fixture/session.json: FOUND
+- qa-fixtures/tui-harness-with-map/.ai/sessions/2026-04-15-e2e-fixture/artifacts/map-data.md: FOUND
+- .planning/phases/02-end-to-end-verification/02-02-SUMMARY.md: FOUND
+- Commit fff0986 (Task 1 - fixture): FOUND
+- Commit 975cf0d (Task 2 - spec): FOUND
+- Commit 7157380 (SUMMARY): FOUND
