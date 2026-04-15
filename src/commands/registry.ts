@@ -24,6 +24,7 @@ import { statusCommand } from './status.js';
 import { summarizeSessionCommand } from './summarize-session.js';
 import { sessionUsageCommand } from './session-usage.js';
 import { workflowCommand } from './workflow.js';
+import { commitMapCommand } from './commit-map.js';
 import { loadMapCommand } from './load-map.js';
 import { saveMapCommand } from './save-map.js';
 import { wikiItemCommand } from './wiki-item.js';
@@ -62,6 +63,7 @@ const coreCommands: CommandDefinition[] = [
   summarizeSessionCommand,
   saveMapCommand,
   loadMapCommand,
+  commitMapCommand,
   wikiItemCommand,
   wikiFinalizeItemCommand,
   wikiSaveItemCommand,
