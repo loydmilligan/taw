@@ -25,7 +25,12 @@ const BRAINSTORM_FINALIZE_QUEUE: string[] = [
     '   [DESIGN] — multiple viable approaches exist; needs design thinking to choose or invent a path',
     '   [DECIDE] — options are clear; needs a judgment call and commitment',
     '',
-    'Output the tagged Key Questions / Open Items section only. Do not reprint the full map.'
+    'Output the tagged Key Questions / Open Items section only. Do not reprint the full map.',
+    '',
+    'REQUIRED FORMAT: One item per line, starting with the bold bracketed tag followed by the item text.',
+    'Example: **[RESEARCH]** What is the right database for this?',
+    'Do NOT use a table. Do NOT put the tag in its own column. Do NOT use backticks around the tag.',
+    'The downstream parser only reads items in the inline **[TAG]** text format.'
   ].join('\n'),
 
   // Job 3: Research transition suggestion

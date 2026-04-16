@@ -13,12 +13,14 @@ const SESSION_TYPES = [
 ] as const;
 
 function parseTaggedItems(text: string): BrainstormOpenItem[] {
+  // Strip bold markdown wrappers before matching so **[TAG]** and [TAG] both work
+  const stripped = text.replace(/\*\*/g, '');
   const tagRegex = /\[(RESEARCH|VALIDATE|DESIGN|DECIDE)\]\s+(.+)/g;
   const items: BrainstormOpenItem[] = [];
   let match;
   let index = 1;
 
-  while ((match = tagRegex.exec(text)) !== null) {
+  while ((match = tagRegex.exec(stripped)) !== null) {
     const tag = match[1] as OpenItemTag;
     const itemText = match[2].trim();
     if (itemText) {
@@ -44,16 +46,23 @@ function detectSessionType(bodies: string[]): string {
   return 'unknown';
 }
 
-function extractTopic(assistantBodies: string[], firstUserBody: string): string {
-  // The research transition response contains a line like:
-  // "To take these into Research, run: /research tech <topic>"
-  const researchLineRegex = /\/research\s+tech\s+([^`\n]+)/i;
+function extractTopic(assistantBodies: string[], artifactBody: string, firstUserBody: string): string {
+  // Prefer the title from the exploration map header. Tolerate the variations the AI actually
+  // emits: "Exploration Map" in any case, optional 🗺️ emoji, and either `:` or `—`/`-` between
+  // the label and the title.
+  const mapTitleRegex = /##\s+(?:🗺️\s+)?Exploration\s+Map\s*[:\-—–]\s*(.+)/i;
+  const artifactMatch = artifactBody.match(mapTitleRegex);
+  if (artifactMatch?.[1]) return artifactMatch[1].trim();
+
   for (const body of [...assistantBodies].reverse()) {
-    const match = body.match(researchLineRegex);
-    if (match?.[1]) return match[1].trim().replace(/`+$/, '').trim();
+    const match = body.match(mapTitleRegex);
+    if (match?.[1]) return match[1].trim();
   }
-  // Fallback: first 60 chars of first user message
-  return firstUserBody.slice(0, 60).replace(/\n/g, ' ').trim() || 'brainstorm';
+
+  // Fallback: strip a leading /command from the first user message so the topic isn't
+  // "/brainstorm very simple todo app…" when the map title can't be found.
+  const cleaned = firstUserBody.replace(/^\/[a-z-]+\s+/i, '').slice(0, 60).replace(/\n/g, ' ').trim();
+  return cleaned || 'brainstorm';
 }
 
 function buildFrontmatter(map: BrainstormMap): string {
@@ -127,7 +136,7 @@ export const saveMapCommand: CommandDefinition = {
       .find((body) => /\[(RESEARCH|VALIDATE|DESIGN|DECIDE)\]/.test(body));
 
     const openItems = taggedBody ? parseTaggedItems(taggedBody) : [];
-    const topic = extractTopic(assistantBodies, firstUserBody);
+    const topic = extractTopic(assistantBodies, artifactBody, firstUserBody);
     const sessionType = detectSessionType(assistantBodies);
     const savedAt = new Date().toISOString().slice(0, 10);
 
