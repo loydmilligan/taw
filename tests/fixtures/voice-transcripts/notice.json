@@ -1,0 +1,10 @@
+{
+  "entry": {
+    "id": "fx-not",
+    "kind": "notice",
+    "title": "Map Committed",
+    "body": "Wrote 17 files to /home/user/vault/brainstorm/"
+  },
+  "mode": "General",
+  "expected": "Map Committed"
+}

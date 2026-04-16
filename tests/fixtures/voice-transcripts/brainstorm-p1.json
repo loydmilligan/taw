@@ -1,0 +1,10 @@
+{
+  "entry": {
+    "id": "fx-bp1",
+    "kind": "assistant",
+    "body": "[VOICE SUMMARY]: I want to understand your core constraint.\n\nLet me expand on this...\n\nMore context here.\n\nWhat is the single biggest constraint driving the design?",
+    "draftState": "complete"
+  },
+  "mode": "Brainstorm",
+  "expected": "[VOICE SUMMARY]: I want to understand your core constraint. What is the single biggest constraint driving the design?"
+}

@@ -1,0 +1,10 @@
+{
+  "entry": {
+    "id": "fx-mf",
+    "kind": "assistant",
+    "body": "Summary line here.\n\n───── Phase 1 · Options: a, b, c ─────\n\nWhat should we explore next?",
+    "draftState": "complete"
+  },
+  "mode": "Brainstorm",
+  "expected": "Summary line here. What should we explore next?"
+}

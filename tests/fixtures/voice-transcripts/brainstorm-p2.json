@@ -1,0 +1,10 @@
+{
+  "entry": {
+    "id": "fx-bp2",
+    "kind": "assistant",
+    "body": "[VOICE SUMMARY]: Here's what the map looks like so far.\n\n### Problem\nSome problem text.\n\n### Market\nSome market text.\n\nWhat risks should we add?",
+    "draftState": "complete"
+  },
+  "mode": "Brainstorm Phase 2",
+  "expected": "[VOICE SUMMARY]: Here's what the map looks like so far. What risks should we add?"
+}

@@ -1,0 +1,9 @@
+{
+  "entry": {
+    "id": "fx-err",
+    "kind": "error",
+    "body": "Something broke"
+  },
+  "mode": "General",
+  "expected": ""
+}

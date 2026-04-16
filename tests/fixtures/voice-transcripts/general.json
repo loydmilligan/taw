@@ -1,0 +1,10 @@
+{
+  "entry": {
+    "id": "fx-gen",
+    "kind": "assistant",
+    "body": "TypeScript's type system is structural. This means any object matching the shape is assignable.",
+    "draftState": "complete"
+  },
+  "mode": "General",
+  "expected": "TypeScript's type system is structural."
+}
