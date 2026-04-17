@@ -32,6 +32,7 @@ import { wikiFinalizeItemCommand } from './wiki-finalize-item.js';
 import { wikiSaveItemCommand } from './wiki-save-item.js';
 import { wikiAddResearchCommand } from './wiki-add-research.js';
 import { wikiResolveItemCommand } from './wiki-resolve-item.js';
+import { voiceCommand } from './voice.js';
 import { wikiCommand } from './wiki.js';
 import type { CommandDefinition } from './types.js';
 
@@ -69,6 +70,7 @@ const coreCommands: CommandDefinition[] = [
   wikiSaveItemCommand,
   wikiAddResearchCommand,
   wikiResolveItemCommand,
+  voiceCommand,
   exitCommand,
   statusCommand,
   wikiCommand
