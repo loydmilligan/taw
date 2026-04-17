@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { voiceConfigSchema } from '../voice/config.js';
 
 export const projectConfigSchema = z.object({
   projectName: z.string().default(''),
@@ -112,6 +113,7 @@ export const globalConfigSchema = z.object({
       enabled: false,
       baseUrl: 'http://localhost:4433'
     }),
+  voice: voiceConfigSchema,
   allowedContextDirs: z.array(z.string()).default([]),
   providers: z
     .object({
