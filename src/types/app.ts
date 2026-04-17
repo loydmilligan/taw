@@ -60,4 +60,6 @@ export interface AppState {
   } | null;
   queuedInputs: string[];
   brainstormMap: BrainstormMap | null;
+  voiceMode: boolean;
+  voiceState: 'idle' | 'listening' | 'speaking';
 }

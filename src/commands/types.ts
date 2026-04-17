@@ -26,6 +26,7 @@ export interface CommandResult {
   shouldExit?: boolean;
   brainstormMap?: BrainstormMap | null;
   openMapPicker?: MapPickerItem[] | null;
+  voiceMode?: boolean;
   entries: TranscriptEntry[];
 }
 

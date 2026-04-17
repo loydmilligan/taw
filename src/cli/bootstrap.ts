@@ -62,7 +62,9 @@ export async function bootstrapApp(
     },
     openrouterAccount,
     queuedInputs: [...(options.queuedInputs ?? []), ...(browserState?.queuedInputs ?? [])],
-    brainstormMap: null
+    brainstormMap: null,
+    voiceMode: false,
+    voiceState: 'idle'
   };
 }
 
