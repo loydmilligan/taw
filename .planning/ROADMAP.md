@@ -158,14 +158,14 @@ Plans:
 
 **Requirements:** VOICE-01 (STT input), VOICE-02 (TTS output), VOICE-03 (per-mode extraction), VOICE-04 (cost/interruption guardrails).
 
-**Plans:** 2/7 plans executed
+**Plans:** 5/7 plans executed
 
 Plans:
 - [x] 999.3-00-PLAN.md — Wave 0 test scaffolding + fixture transcripts
 - [x] 999.3-01-PLAN.md — Pure per-mode extractor (extract.ts) [TDD]
-- [ ] 999.3-02-PLAN.md — VoiceService (listen/speak/interrupt) + Zod config schema [TDD]
-- [ ] 999.3-03-PLAN.md — In-session cost accumulator (cost.ts) [TDD]
-- [ ] 999.3-04-PLAN.md — AppState + CommandResult extension + /voice command + registry
+- [x] 999.3-02-PLAN.md — VoiceService (listen/speak/interrupt) + Zod config schema [TDD]
+- [x] 999.3-03-PLAN.md — In-session cost accumulator (cost.ts) [TDD]
+- [x] 999.3-04-PLAN.md — AppState + CommandResult extension + /voice command + registry
 - [ ] 999.3-05-PLAN.md — App.tsx wiring (Ctrl+V hotkey, TTS hook, interrupt, cost gate)
 - [ ] 999.3-06-PLAN.md — Brainstorm P1/P2 prompt VOICE SUMMARY directive + regression test
 
