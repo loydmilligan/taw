@@ -258,6 +258,34 @@ export function App({ state }: AppProps): React.JSX.Element {
       return;
     }
 
+    // Ctrl+R: read last assistant message aloud (manual TTS trigger)
+    if (key.ctrl && value.toLowerCase() === 'r') {
+      if (appStateRef.current.voiceState === 'speaking') {
+        // Already speaking — interrupt
+        if (activeSpeakProcRef.current) {
+          voiceServiceRef.current.interruptSpeak(activeSpeakProcRef.current);
+          activeSpeakProcRef.current = null;
+          setAppState(prev => ({ ...prev, voiceState: 'idle' }));
+        }
+        return;
+      }
+      const last = [...appStateRef.current.transcript].reverse().find(e => e.kind === 'assistant' && e.draftState === 'complete');
+      if (!last) return;
+      const mode = String(appStateRef.current.mode ?? 'General');
+      const text = extractForVoice(last, mode);
+      if (!text) return;
+      const proc = voiceServiceRef.current.speakAsync(text);
+      activeSpeakProcRef.current = proc;
+      setAppState(prev => ({ ...prev, voiceState: 'speaking' }));
+      proc.on('close', () => {
+        if (activeSpeakProcRef.current === proc) {
+          activeSpeakProcRef.current = null;
+          setAppState(prev => ({ ...prev, voiceState: 'idle' }));
+        }
+      });
+      return;
+    }
+
     // ── Map picker input ────────────────────────────────────────────────────
     if (mapPicker !== null) {
       if (key.escape) {
