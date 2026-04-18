@@ -5,13 +5,16 @@ function makeProc(killed = false): any {
   return { killed, kill: vi.fn() };
 }
 
+const pressKey = (char: string) => ({ value: char, key: {} });
+const arrowKey = () => ({ value: '', key: { downArrow: true } });
+
 describe('handleKeyWithInterrupt (D-10 fallthrough contract)', () => {
   it('calls interruptSpeak AND defaultHandler when a speak proc is active', () => {
     const proc = makeProc(false);
     const ref = { current: proc };
     const interruptSpeak = vi.fn();
     const defaultHandler = vi.fn();
-    handleKeyWithInterrupt('a', ref, interruptSpeak, defaultHandler);
+    handleKeyWithInterrupt(pressKey('a'), ref, interruptSpeak, defaultHandler);
     expect(interruptSpeak).toHaveBeenCalledWith(proc);
     expect(defaultHandler).toHaveBeenCalledTimes(1); // CRITICAL: fallthrough
     expect(ref.current).toBeNull(); // ref cleared
@@ -21,7 +24,7 @@ describe('handleKeyWithInterrupt (D-10 fallthrough contract)', () => {
     const ref: { current: any } = { current: null };
     const interruptSpeak = vi.fn();
     const defaultHandler = vi.fn();
-    handleKeyWithInterrupt('a', ref, interruptSpeak, defaultHandler);
+    handleKeyWithInterrupt(pressKey('a'), ref, interruptSpeak, defaultHandler);
     expect(interruptSpeak).not.toHaveBeenCalled();
     expect(defaultHandler).toHaveBeenCalledTimes(1);
   });
@@ -31,7 +34,7 @@ describe('handleKeyWithInterrupt (D-10 fallthrough contract)', () => {
     const ref = { current: proc };
     const interruptSpeak = vi.fn();
     const defaultHandler = vi.fn();
-    handleKeyWithInterrupt('a', ref, interruptSpeak, defaultHandler);
+    handleKeyWithInterrupt(pressKey('a'), ref, interruptSpeak, defaultHandler);
     expect(interruptSpeak).not.toHaveBeenCalled();
     expect(defaultHandler).toHaveBeenCalledTimes(1);
   });
@@ -40,7 +43,17 @@ describe('handleKeyWithInterrupt (D-10 fallthrough contract)', () => {
     const proc = makeProc(false);
     const ref = { current: proc };
     let defaultRan = false;
-    handleKeyWithInterrupt('x', ref, vi.fn(), () => { defaultRan = true; });
+    handleKeyWithInterrupt(pressKey('x'), ref, vi.fn(), () => { defaultRan = true; });
     expect(defaultRan).toBe(true);
+  });
+
+  it('does NOT interrupt TTS on arrow keys — navigation should not cut playback', () => {
+    const proc = makeProc(false);
+    const ref = { current: proc };
+    const interruptSpeak = vi.fn();
+    const defaultHandler = vi.fn();
+    handleKeyWithInterrupt(arrowKey(), ref, interruptSpeak, defaultHandler);
+    expect(interruptSpeak).not.toHaveBeenCalled();
+    expect(defaultHandler).toHaveBeenCalledTimes(1);
   });
 });

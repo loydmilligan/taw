@@ -112,7 +112,7 @@ export function App({ state }: AppProps): React.JSX.Element {
 
   // TTS-trigger: fires whenever transcript changes, speaks the last completed assistant entry.
   React.useEffect(() => {
-    if (!appStateRef.current.voiceMode) return;
+    if (!appState.voiceMode) return;
     const last = appState.transcript.at(-1);
     if (!last || last.kind !== 'assistant') return;
     if (last.draftState !== 'complete') return;
