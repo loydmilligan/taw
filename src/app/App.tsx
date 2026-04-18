@@ -110,6 +110,62 @@ export function App({ state }: AppProps): React.JSX.Element {
     []
   );
 
+  // TTS-trigger: fires whenever transcript changes, speaks the last completed assistant entry.
+  React.useEffect(() => {
+    if (!appStateRef.current.voiceMode) return;
+    const last = appState.transcript.at(-1);
+    if (!last || last.kind !== 'assistant') return;
+    if (last.draftState !== 'complete') return;
+    if (lastSpokenIdRef.current === last.id) return; // Pitfall #4: prevent duplicate TTS
+
+    const cap = appStateRef.current.globalConfig?.voice?.sessionCostCapUsd ?? 0.10;
+    // First gate: cap already hit before this turn
+    if (isCapped(cap)) {
+      setAppState(prev => ({ ...prev, voiceMode: false, voiceState: 'idle' }));
+      return;
+    }
+
+    const mode = String(appStateRef.current.mode ?? 'General');
+    const text = extractForVoice(last, mode);
+    if (!text) return;
+
+    // PRE-CHARGE: mark this entry as "spoken" and charge BEFORE spawning subprocess (T-999.3-03).
+    // If pre-charge puts us over the cap, disable and do NOT spawn speakAsync.
+    lastSpokenIdRef.current = last.id;
+    const TTS_ESTIMATE = 0.005; // conservative per RESEARCH §OpenRouter TTS short response
+    addCost(TTS_ESTIMATE);
+    if (isCapped(cap)) {
+      // Interrupt any active playback (shouldn't be one here, but defensive) and disable.
+      if (activeSpeakProcRef.current) {
+        voiceServiceRef.current.interruptSpeak(activeSpeakProcRef.current);
+        activeSpeakProcRef.current = null;
+      }
+      setAppState(prev => ({
+        ...prev,
+        voiceMode: false,
+        voiceState: 'idle',
+        transcript: [...prev.transcript, {
+          id: `voice-cap-${Date.now()}`,
+          kind: 'notice',
+          title: 'Voice Mode Disabled',
+          body: `Session cost cap of $${cap.toFixed(2)} reached.`,
+        } satisfies TranscriptEntry],
+      }));
+      return; // NO speakAsync spawned
+    }
+
+    const proc = voiceServiceRef.current.speakAsync(text);
+    activeSpeakProcRef.current = proc;
+    setAppState(prev => ({ ...prev, voiceState: 'speaking' }));
+
+    proc.on('close', () => {
+      if (activeSpeakProcRef.current === proc) {
+        activeSpeakProcRef.current = null;
+        setAppState(prev => ({ ...prev, voiceState: 'idle' }));
+      }
+    });
+  }, [appState.transcript]);
+
   async function handleVoiceTurn() {
     const cfg = appStateRef.current.globalConfig?.voice;
     const cap = cfg?.sessionCostCapUsd ?? 0.10;
