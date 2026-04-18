@@ -21,6 +21,11 @@ import { summarizeSessionUsage } from '../core/telemetry/derivation.js';
 import { readTelemetrySummaries } from '../core/telemetry/store.js';
 import { createId } from '../utils/ids.js';
 import { logError } from '../services/logging/logger.js';
+import type { ChildProcess } from 'node:child_process';
+import { createVoiceService } from '../services/voice/index.js';
+import { extractForVoice } from '../services/voice/extract.js';
+import { isCapped, addCost, reset as resetVoiceCost } from '../services/voice/cost.js';
+import { handleKeyWithInterrupt } from './voice-input.js';
 import { executeChatTurn } from '../core/chat/engine.js';
 import {
   currentDraftTitle,
@@ -59,6 +64,11 @@ export function App({ state }: AppProps): React.JSX.Element {
   const [inputHistory, setInputHistory] = React.useState<string[]>([]);
   const inputRef = React.useRef(inputState);
   const appStateRef = React.useRef(appState);
+  const voiceServiceRef = React.useRef(createVoiceService({
+    pythonPath: state.globalConfig?.voice?.pythonPath,
+  }));
+  const activeSpeakProcRef = React.useRef<ChildProcess | null>(null);
+  const lastSpokenIdRef = React.useRef<string | null>(null);
   const streamAbortRef = React.useRef<AbortController | null>(null);
   const activeAssistantIdRef = React.useRef<string | null>(null);
   const streamedAssistantTextRef = React.useRef('');
@@ -82,10 +92,19 @@ export function App({ state }: AppProps): React.JSX.Element {
     appStateRef.current = appState;
   }, [appState]);
 
+  React.useEffect(() => {
+    resetVoiceCost();
+  }, []);
+
   React.useEffect(
     () => () => {
       if (flushTimerRef.current) {
         globalThis.clearTimeout(flushTimerRef.current);
+      }
+      // Unmount: interrupt any active TTS to prevent orphan processes (T-999.3-02)
+      if (activeSpeakProcRef.current) {
+        voiceServiceRef.current.interruptSpeak(activeSpeakProcRef.current);
+        activeSpeakProcRef.current = null;
       }
     },
     []
@@ -552,7 +571,13 @@ export function App({ state }: AppProps): React.JSX.Element {
         brainstormMap:
           result.brainstormMap !== undefined
             ? result.brainstormMap
-            : current.brainstormMap
+            : current.brainstormMap,
+        ...(typeof result.voiceMode === 'boolean'
+          ? {
+              voiceMode: result.voiceMode,
+              voiceState: result.voiceMode ? current.voiceState : ('idle' as const),
+            }
+          : {}),
       }));
 
       // Auto-show the panel when a map is first loaded
