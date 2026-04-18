@@ -110,7 +110,71 @@ export function App({ state }: AppProps): React.JSX.Element {
     []
   );
 
+  async function handleVoiceTurn() {
+    const cfg = appStateRef.current.globalConfig?.voice;
+    const cap = cfg?.sessionCostCapUsd ?? 0.10;
+    const duration = cfg?.listenDurationSecs ?? 5;
+    const STT_ESTIMATE = 0.0003; // ~$0.0001/5s per RESEARCH §OpenRouter + margin
+
+    // PRE-CHARGE: charge estimated cost BEFORE spawning listen subprocess (T-999.3-03).
+    addCost(STT_ESTIMATE);
+    if (isCapped(cap)) {
+      setAppState(prev => ({
+        ...prev,
+        voiceMode: false,
+        voiceState: 'idle',
+        transcript: [...prev.transcript, {
+          id: `voice-cap-${Date.now()}`,
+          kind: 'notice',
+          title: 'Voice Mode Disabled',
+          body: `Session cost cap of $${cap.toFixed(2)} reached. Re-enable with /voice on.`,
+        } satisfies TranscriptEntry],
+      }));
+      return; // NO subprocess spawned
+    }
+
+    setAppState(prev => ({ ...prev, voiceState: 'listening' }));
+    const result = await voiceServiceRef.current.listen(duration);
+    setAppState(prev => ({ ...prev, voiceState: 'idle' }));
+
+    if (result.ok) {
+      // Route transcript through THE SAME function Enter uses (App.tsx submitInput).
+      // submitInput() is zero-arg; it reads inputRef.current.value.
+      inputRef.current = { value: result.transcript, cursor: result.transcript.length };
+      setInputState({ value: result.transcript, cursor: result.transcript.length });
+      await Promise.resolve();
+      await submitInput();
+    } else {
+      setAppState(prev => ({
+        ...prev,
+        voiceMode: result.reason === 'hardware' ? false : prev.voiceMode,
+        transcript: [...prev.transcript, {
+          id: `voice-err-${Date.now()}`,
+          kind: 'error',
+          title: `Voice ${result.reason} error`,
+          body: result.detail,
+        } satisfies TranscriptEntry],
+      }));
+    }
+  }
+
   useInput((value, key) => {
+    // D-10: Any keypress during TTS cuts playback AND still types into the input.
+    // handleKeyWithInterrupt guarantees defaultHandler ALWAYS runs (no early return — Pitfall #6).
+    let _defaultHandled = false;
+    handleKeyWithInterrupt(
+      { value, key },
+      activeSpeakProcRef,
+      (proc) => {
+        voiceServiceRef.current.interruptSpeak(proc);
+        setAppState(prev => ({ ...prev, voiceState: 'idle' }));
+      },
+      () => { _defaultHandled = true; }, // sentinel — the rest of useInput IS the default handler
+    );
+    // _defaultHandled is always true here (D-10 fallthrough contract).
+    // Execution continues into the normal key handling below.
+    void _defaultHandled;
+
     if (key.ctrl && value.toLowerCase() === 'l') {
       setCommandPaletteOpen((current) => !current);
       return;
@@ -129,6 +193,12 @@ export function App({ state }: AppProps): React.JSX.Element {
         }
         return next;
       });
+      return;
+    }
+
+    if (key.ctrl && value.toLowerCase() === 'v' && appStateRef.current.voiceMode) {
+      if (appStateRef.current.voiceState !== 'idle') return; // re-entry guard (Pitfall #5)
+      void handleVoiceTurn();
       return;
     }
 
