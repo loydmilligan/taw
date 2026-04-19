@@ -34,6 +34,9 @@ import { wikiAddResearchCommand } from './wiki-add-research.js';
 import { wikiResolveItemCommand } from './wiki-resolve-item.js';
 import { voiceCommand } from './voice.js';
 import { wikiCommand } from './wiki.js';
+import { flashcardsCommand } from './flashcards.js';
+import { lpResearchCommand } from './lp-research.js';
+import { checkpointCommand } from './checkpoint.js';
 import type { CommandDefinition } from './types.js';
 
 const coreCommands: CommandDefinition[] = [
@@ -71,6 +74,9 @@ const coreCommands: CommandDefinition[] = [
   wikiAddResearchCommand,
   wikiResolveItemCommand,
   voiceCommand,
+  flashcardsCommand,
+  lpResearchCommand,
+  checkpointCommand,
   exitCommand,
   statusCommand,
   wikiCommand
