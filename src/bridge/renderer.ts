@@ -218,7 +218,7 @@ export function renderMobilePage(token: string): string {
 </html>`;
 }
 
-export function renderPwaAppPage(hasSession: boolean): string {
+export function renderPwaAppPage(): string {
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -743,7 +743,7 @@ export function renderPwaAppPage(hasSession: boolean): string {
 
   <main>
     <!-- Auth Screen -->
-    <div id="authBlock"${hasSession ? ' class="hidden"' : ''}>
+    <div id="authBlock">
       <div class="auth-card">
         <div class="auth-logo">
           <div class="auth-logo-icon">
@@ -773,7 +773,7 @@ export function renderPwaAppPage(hasSession: boolean): string {
     </div>
 
     <!-- App Panels -->
-    <div id="appBlock"${hasSession ? '' : ' class="hidden"'}>
+    <div id="appBlock" class="hidden">
 
       <section id="panel-capture" class="panel">
         <div class="panel-header">
@@ -899,7 +899,7 @@ export function renderPwaAppPage(hasSession: boolean): string {
   </main>
 
   <!-- Bottom Navigation Bar -->
-  <nav class="bottom-nav" id="bottomNav"${hasSession ? '' : ' style="display:none"'}>
+  <nav class="bottom-nav" id="bottomNav" style="display:none">
     <div class="bottom-nav-inner">
       <button class="nav-btn active" data-panel="capture" type="button" aria-label="Capture">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
@@ -1522,17 +1522,31 @@ export function renderPwaAppPage(hasSession: boolean): string {
     }
 
     const sharedPayload = readSharedPayloadFromUrl();
-    if (sharedPayload && !${JSON.stringify(hasSession)}) {
-      localStorage.setItem(pendingShareStorageKey, JSON.stringify(sharedPayload));
-    }
 
-    if (${JSON.stringify(hasSession)}) {
-      loadState()
-        .then(() => {
+    // Check session client-side — shell is always served stateless for safe SW caching
+    (async function checkSession() {
+      try {
+        const res = await fetch('/app/api/state');
+        if (res.ok) {
+          // Session valid — transition to app UI and load state
+          authBlock.classList.add('hidden');
+          appBlock.classList.remove('hidden');
+          if (bottomNav) bottomNav.style.display = '';
+          await loadState();
           applySharedPayload(sharedPayload);
-        })
-        .catch((error) => setMessage(captureStatusAppEl, error.message || 'Could not load app state.', 'error'));
-    }
+        } else {
+          // Not authenticated — store pending share for after bootstrap
+          if (sharedPayload) {
+            localStorage.setItem(pendingShareStorageKey, JSON.stringify(sharedPayload));
+          }
+        }
+      } catch {
+        // Network error or bridge not running — stay on auth screen
+        if (sharedPayload) {
+          localStorage.setItem(pendingShareStorageKey, JSON.stringify(sharedPayload));
+        }
+      }
+    })();
   </script>
 </body>
 </html>`;

@@ -291,10 +291,10 @@ export function createAppServerHandler(
     }
 
     if (request.method === 'GET' && parsedUrl?.pathname === '/app') {
-      const hasSession = authorizeApp(request);
+      // Shell is stateless — session check is done client-side via /app/api/state fetch
       response.statusCode = 200;
       response.setHeader('content-type', 'text/html; charset=utf-8');
-      response.end(renderPwaAppPage(hasSession));
+      response.end(renderPwaAppPage());
       return;
     }
 
