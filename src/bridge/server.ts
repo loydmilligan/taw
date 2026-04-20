@@ -6,6 +6,17 @@ import { deflateSync } from 'node:zlib';
 import { z } from 'zod';
 import { resolvePhaseAfterCommand } from '../app/state.js';
 import { bootstrapApp } from '../cli/bootstrap.js';
+import {
+  authorize,
+  authorizeApp,
+  createAppSession,
+  ensureAppState,
+  setAppSessionCookie,
+  getAppSessionRecord,
+  cleanupOldAppSessions,
+  appSessions
+} from './auth.js';
+import { parseRequestUrl, readJson, writeJson } from './http-utils.js';
 import { parseCommand } from '../commands/parser.js';
 import { getCommandDefinition } from '../commands/registry.js';
 import { executeChatTurn } from '../core/chat/engine.js';
@@ -54,10 +65,6 @@ interface BackgroundJob {
 }
 
 const activeJobs = new Map<string, BackgroundJob>();
-const appSessions = new Map<
-  string,
-  { createdAt: string; lastSeenAt: string; appState: AppState | null }
->();
 
 interface AppActionItem {
   id: string;
@@ -73,15 +80,6 @@ function cleanupOldJobs(): void {
   for (const [id, job] of activeJobs) {
     if (new Date(job.startedAt).getTime() < cutoffMs) {
       activeJobs.delete(id);
-    }
-  }
-}
-
-function cleanupOldAppSessions(): void {
-  const cutoffMs = Date.now() - 7 * 24 * 60 * 60 * 1000;
-  for (const [id, session] of appSessions) {
-    if (new Date(session.lastSeenAt).getTime() < cutoffMs) {
-      appSessions.delete(id);
     }
   }
 }
@@ -832,127 +830,6 @@ async function writeWikiSourceFile(
 
 function normalizeTopic(raw: string): string {
   return raw.toLowerCase().replace(/[^a-z0-9-]/g, '-');
-}
-
-function authorize(request: http.IncomingMessage, token: string): boolean {
-  const requestToken = request.headers['x-taw-token'];
-
-  if (typeof requestToken !== 'string') {
-    return false;
-  }
-
-  return requestToken === token;
-}
-
-function authorizeApp(request: http.IncomingMessage): boolean {
-  const session = getAppSessionRecord(request);
-  if (!session) {
-    return false;
-  }
-  session.lastSeenAt = new Date().toISOString();
-  cleanupOldAppSessions();
-  return true;
-}
-
-function getAppSessionId(request: http.IncomingMessage): string | null {
-  return parseCookies(request.headers.cookie ?? '')['taw_app_session'] ?? null;
-}
-
-function getAppSessionRecord(
-  request: http.IncomingMessage
-): { createdAt: string; lastSeenAt: string; appState: AppState | null } | null {
-  const sessionId = getAppSessionId(request);
-  if (!sessionId) {
-    return null;
-  }
-  return appSessions.get(sessionId) ?? null;
-}
-
-async function ensureAppState(
-  request: http.IncomingMessage,
-  defaultCwd: string
-): Promise<AppState> {
-  const sessionId = getAppSessionId(request);
-  if (!sessionId) {
-    throw new Error('App session required.');
-  }
-  const record = appSessions.get(sessionId);
-  if (!record) {
-    throw new Error('App session not found.');
-  }
-  if (!record.appState) {
-    record.appState = await bootstrapApp(defaultCwd);
-  }
-  record.lastSeenAt = new Date().toISOString();
-  return record.appState;
-}
-
-function parseRequestUrl(request: http.IncomingMessage): URL | null {
-  if (!request.url) {
-    return null;
-  }
-  const host = request.headers.host ?? '127.0.0.1';
-  return new URL(request.url, `http://${host}`);
-}
-
-function createAppSession(): string {
-  const sessionId = randomUUID();
-  const now = new Date().toISOString();
-  appSessions.set(sessionId, { createdAt: now, lastSeenAt: now, appState: null });
-  cleanupOldAppSessions();
-  return sessionId;
-}
-
-function setAppSessionCookie(
-  response: http.ServerResponse,
-  sessionId: string
-): void {
-  response.setHeader(
-    'set-cookie',
-    `taw_app_session=${sessionId}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${7 * 24 * 60 * 60}`
-  );
-}
-
-function parseCookies(rawCookieHeader: string): Record<string, string> {
-  return rawCookieHeader
-    .split(';')
-    .map((part) => part.trim())
-    .filter(Boolean)
-    .reduce<Record<string, string>>((acc, part) => {
-      const separator = part.indexOf('=');
-      if (separator <= 0) {
-        return acc;
-      }
-      acc[part.slice(0, separator)] = decodeURIComponent(part.slice(separator + 1));
-      return acc;
-    }, {});
-}
-
-function readJson(request: http.IncomingMessage): Promise<unknown> {
-  return new Promise((resolve, reject) => {
-    let data = '';
-    request.on('data', (chunk) => {
-      data += String(chunk);
-    });
-    request.on('end', () => {
-      try {
-        resolve(JSON.parse(data || '{}'));
-      } catch (error) {
-        reject(error);
-      }
-    });
-    request.on('error', reject);
-  });
-}
-
-function writeJson(
-  response: http.ServerResponse,
-  statusCode: number,
-  body: unknown
-): void {
-  response.statusCode = statusCode;
-  response.setHeader('content-type', 'application/json');
-  response.end(JSON.stringify(body));
 }
 
 function buildResearchWindowName(title: string): string {
