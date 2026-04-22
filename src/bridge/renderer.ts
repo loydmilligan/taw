@@ -896,7 +896,7 @@ export function renderPwaAppPage(): string {
         <div class="card" id="flashcard-section">
           <h3>Flashcards</h3>
           <div class="meta" style="margin-bottom:12px">Study Q&amp;A pairs extracted from your wiki notes.</div>
-          <button class="btn" id="loadFlashcardsBtn" onclick="loadFlashcards()">Load Flashcards</button>
+          <button type="button" class="btn btn-primary" id="loadFlashcardsBtn" onclick="loadFlashcards()">Load Flashcards</button>
           <div id="flashcard-list" style="margin-top:12px"></div>
         </div>
       </section>
@@ -1147,6 +1147,10 @@ export function renderPwaAppPage(): string {
       ].join('');
     }
 
+    function escHtml(s) {
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
     async function loadFlashcards() {
       const listEl = document.getElementById('flashcard-list');
       listEl.innerHTML = '<div class="meta">Loading…</div>';
@@ -1163,10 +1167,10 @@ export function renderPwaAppPage(): string {
           return;
         }
         listEl.innerHTML = cards.map((card) =>
-          '<div class="surface" style="margin-top:8px"><strong>Q: ' + card.question + '</strong><div class="meta" style="margin-top:4px">A: ' + card.answer + '</div><div class="meta" style="font-size:11px;margin-top:4px">Source: ' + card.sourceFile + '</div></div>'
+          '<div class="surface" style="margin-top:8px"><strong>Q: ' + escHtml(card.question) + '</strong><div class="meta" style="margin-top:4px">A: ' + escHtml(card.answer) + '</div><div class="meta" style="font-size:11px;margin-top:4px">Source: ' + escHtml(card.sourceFile) + '</div></div>'
         ).join('');
       } catch (err) {
-        listEl.innerHTML = '<div class="meta" style="color:var(--error)">Error: ' + String(err) + '</div>';
+        listEl.innerHTML = '<div class="meta" style="color:var(--error)">Error: ' + escHtml(String(err)) + '</div>';
       }
     }
 
