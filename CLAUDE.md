@@ -2,6 +2,22 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Active incident — wiki layout migration disabled (2026-04-22)
+
+`migrateLegacyWikiLayout()` in `src/services/wiki/manager.ts` is currently **disabled at both call sites** (`src/cli/bootstrap.ts:23`, `src/bridge/server.ts:12`). Do NOT re-enable it without fixing the underlying bug first.
+
+**What happened:** Commit `fea81d0` ("feat: migrate wiki topics into topics root") introduced the migration to move TAW research folders under `wiki/topics/`. However, the implementation uses a denylist (only `topics` and `research` are reserved) and treats every other top-level folder as a legacy topic. This silently moved unrelated folders belonging to a sibling project (`manage-obsidian`) — `Projects/`, `Areas/`, `Workflows/`, `Evergreen/`, `Dashboards/`, `Templates/`, `Inbox/`, `daily-journal/`, `Reference-Materials/`, `Research/` — into `wiki/topics/`, breaking their expected paths. The user has restored them to vault root.
+
+**Why the migration runs every boot:** `migrateLegacyWikiLayout` has no idempotency guard (no marker file, no "already migrated" check) — it re-runs on every CLI + bridge-server startup, so leaving the call sites enabled would undo the restoration on the very next TAW invocation.
+
+**Required before re-enabling:**
+- Replace the denylist with an allowlist of known TAW topic folders (e.g. `copilot`, `ntopng`, `obsidian`, `repo`, `taw`, `vibecoding`, `wiki`), OR
+- Migrate only folders that contain a TAW-signature file (e.g. `pages/` or the index stub from `buildIndexStub`), OR
+- Gate on a one-shot marker file at `wiki/.taw-migrated` so the migration runs exactly once.
+
+Sibling project `manage-obsidian` owns the non-TAW folders at vault root and relies on their stability. TAW's `topics/` namespace is the correct home for TAW-generated research — do not expand TAW's write scope outside `topics/` and `.config/taw/`.
+
+
 ## What this repo is
 
 This is the **planning and build pack** for Terminal AI Workspace (TAW) — a terminal-native, chat-first AI workspace built with Node.js + TypeScript + Ink (React for CLIs). The `src/` directory does not exist yet; implementation follows the milestone sequence in `docs/tasks.md`.

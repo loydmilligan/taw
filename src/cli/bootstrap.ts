@@ -20,7 +20,7 @@ export async function bootstrapApp(
   cwd: string,
   options: BootstrapOptions = {}
 ): Promise<AppState> {
-  const migratedTopics = await migrateLegacyWikiLayout();
+  const migratedTopics: string[] = []; // await migrateLegacyWikiLayout(); // DISABLED 2026-04-22: was moving non-TAW folders into topics/
   const config = await loadConfig(cwd);
   const session = await createSession({
     cwd,

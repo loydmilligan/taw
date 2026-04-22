@@ -9,7 +9,7 @@ export type BridgeServerOptions = BridgeCoreOptions;
 export function createBridgeServer(options: BridgeServerOptions): http.Server {
   const bridgeCore = createBridgeCoreHandler(options);
   const appServer = createAppServerHandler(options);
-  const wikiLayoutReady = migrateLegacyWikiLayout().catch(() => []);
+  const wikiLayoutReady = Promise.resolve([] as string[]); // migrateLegacyWikiLayout().catch(() => []); // DISABLED 2026-04-22: was moving non-TAW folders into topics/
 
   return http.createServer(async (request, response) => {
     try {
