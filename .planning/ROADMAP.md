@@ -181,3 +181,47 @@ Plans:
 
 Plans:
 - [ ] TBD (promote with /gsd-review-backlog when ready)
+
+### Phase 999.4: Bridge Refactor — Lean Extension Bridge + PWA Capture App (BACKLOG)
+
+**Goal:** Refactor src/bridge/server.ts (3,046 lines) into a lean dispatcher plus three focused modules: bridge-core.ts (token-auth extension endpoints), app-server.ts (cookie-session PWA app), and renderer.ts (HTML render functions). Remove the hand-rolled PNG encoder. Fix the stateful PWA shell (Pitfall 4). Verify all endpoints and capture flows work identically after extraction.
+
+**Requirements:** BRIDGE-01, BRIDGE-02, BRIDGE-03, BRIDGE-04, BRIDGE-05, BRIDGE-06, BRIDGE-07, BRIDGE-08
+
+**Depends on:** None (self-contained bridge refactor)
+
+**Plans:** 4 plans
+
+Plans:
+- [ ] 999.4-01-PLAN.md — Extract auth.ts + http-utils.ts (with 1 MB body cap); wire into server.ts (Wave 1)
+- [ ] 999.4-02-PLAN.md — Extract bridge-core.ts + renderer.ts; remove PNG encoder; server.ts becomes dispatcher stub (Wave 2)
+- [ ] 999.4-03-PLAN.md — Extract app-server.ts; replace stub; server.ts final form ≤300 lines (Wave 3)
+- [x] 999.4-01-PLAN.md — Extract auth.ts + http-utils.ts (with 1 MB body cap); wire into server.ts (Wave 1)
+- [x] 999.4-02-PLAN.md — Extract bridge-core.ts + renderer.ts; remove PNG encoder; server.ts becomes dispatcher stub (Wave 2)
+- [x] 999.4-03-PLAN.md — Extract app-server.ts; replace stub; server.ts final form ≤300 lines (Wave 3)
+- [x] 999.4-04-PLAN.md — Fix stateless PWA shell (Pitfall 4); feature parity audit; human checkpoint (Wave 4)
+
+### Phase 999.5: PWA/Extension Parity Review — Feature & UX Alignment with TUI (BACKLOG)
+
+**Goal:** Audit the browser extension and PWA capture app against the TAW TUI to identify feature gaps, UX inconsistencies, and unique strengths. Produce a prioritized list of improvements so the bridge surfaces (PWA + extension) feel like first-class companions to the TUI rather than afterthoughts. Decide which TUI features are worth bridging to the PWA, which PWA-unique features to preserve/strengthen, and which gaps are acceptable.
+
+**Context:** Phase 999.4 (bridge refactor) is complete — server.ts is now a 26-line dispatcher; code split into bridge-core.ts, app-server.ts, renderer.ts, auth.ts, http-utils.ts. The codebase is now in the best shape to reason about feature alignment.
+
+**Inventory findings (from pre-discussion audit):**
+- TUI has 41 slash commands, 5 modes, voice I/O, brainstorm phases, map panel, source library, flashcards — none of these are surfaced in the PWA
+- PWA has: mobile-first UI, Android share target, background ingest jobs, one-tap action execution, research seeds, topic analysis, installable app — unique strengths TUI lacks
+- Browser extension: quick ingest (research + wiki), SearXNG control, background job polling — narrow but functional
+
+**Requirements:** TBD — define during discussion
+**Success Criteria** (what must be TRUE):
+  1. Every PWA tab/feature is evaluated for UX quality vs. TUI equivalent
+  2. Prioritized backlog of parity improvements with effort estimates
+  3. Decision recorded on which TUI features are in scope for the PWA
+  4. PWA-unique features validated as worth keeping/improving
+
+**Depends on:** Phase 999.4 (complete)
+
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD — define during planning
