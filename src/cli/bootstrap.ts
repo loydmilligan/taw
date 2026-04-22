@@ -8,6 +8,7 @@ import { readTelemetrySummaries } from '../core/telemetry/store.js';
 import { addBrowserPayloadAsSource } from '../core/research/store.js';
 import type { BrowserResearchPayload } from '../core/research/types.js';
 import { fetchOpenRouterCredits } from '../services/openrouter/management.js';
+import { migrateLegacyWikiLayout } from '../services/wiki/manager.js';
 import { createId } from '../utils/ids.js';
 
 export interface BootstrapOptions {
@@ -19,6 +20,7 @@ export async function bootstrapApp(
   cwd: string,
   options: BootstrapOptions = {}
 ): Promise<AppState> {
+  await migrateLegacyWikiLayout();
   const config = await loadConfig(cwd);
   const session = await createSession({
     cwd,

@@ -2,7 +2,7 @@
 
 TAW is a terminal-native, chat-first AI workspace for planning, research, wiki-backed knowledge management, workflow design, and markdown artifact generation. It now also includes a bridge-hosted mobile companion app for capture, review, and lightweight topic interaction.
 
-Current baseline: `0.1.0-beta.10`
+Current baseline: `0.1.0-beta.11`
 
 Structured modes now use a draft-first workflow:
 
@@ -106,6 +106,11 @@ The same bridge can also serve a mobile companion app:
 Global config lives at `~/.config/taw/config.json`.
 
 Project config lives at `.ai/config.json`.
+
+Wiki storage lives under `~/.config/taw/wiki/`:
+
+- topic wikis: `~/.config/taw/wiki/topics/<topic>/`
+- research archives: `~/.config/taw/wiki/research/`
 
 ## Assistant Memory Files
 

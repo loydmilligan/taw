@@ -1,6 +1,7 @@
 import http from 'node:http';
 import { createBridgeCoreHandler, type BridgeCoreOptions } from './bridge-core.js';
 import { createAppServerHandler } from './app-server.js';
+import { migrateLegacyWikiLayout } from '../services/wiki/manager.js';
 
 // BridgeServerOptions aliases BridgeCoreOptions — both modules accept the same shape
 export type BridgeServerOptions = BridgeCoreOptions;
@@ -8,9 +9,11 @@ export type BridgeServerOptions = BridgeCoreOptions;
 export function createBridgeServer(options: BridgeServerOptions): http.Server {
   const bridgeCore = createBridgeCoreHandler(options);
   const appServer = createAppServerHandler(options);
+  const wikiLayoutReady = migrateLegacyWikiLayout().catch(() => []);
 
   return http.createServer(async (request, response) => {
     try {
+      await wikiLayoutReady;
       const url = request.url ?? '/';
       if (url === '/app' || url.startsWith('/app/') || url === '/mobile') {
         await appServer(request, response);

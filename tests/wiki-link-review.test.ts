@@ -7,7 +7,11 @@ import { wikiCommand } from '../src/commands/wiki.js';
 import { confirmCommand } from '../src/commands/confirm.js';
 import { cancelCommand } from '../src/commands/cancel.js';
 import { globalConfigSchema } from '../src/services/config/schema.js';
-import { initWiki, writeWikiPage } from '../src/services/wiki/manager.js';
+import {
+  initWiki,
+  resolveWikiPath,
+  writeWikiPage
+} from '../src/services/wiki/manager.js';
 
 const originalHome = process.env.HOME;
 
@@ -109,16 +113,7 @@ describe('wiki link review', () => {
     expect(confirmed.entries[0]?.title).toBe('Wiki Link Review Applied');
 
     const sourceContent = await readFile(
-      path.join(
-        tempDir,
-        '.config',
-        'taw',
-        'wiki',
-        'vibecoding',
-        'pages',
-        'sources',
-        '2026-04-12-claude-code-notes.md'
-      ),
+      resolveWikiPath('vibecoding', 'pages/sources/2026-04-12-claude-code-notes.md'),
       'utf8'
     );
     expect(sourceContent).toContain('[[claude-code|Claude Code]]');
@@ -126,16 +121,7 @@ describe('wiki link review', () => {
     expect(sourceContent).toContain('index_status: pending');
 
     const entityContent = await readFile(
-      path.join(
-        tempDir,
-        '.config',
-        'taw',
-        'wiki',
-        'vibecoding',
-        'pages',
-        'entities',
-        'claude-code.md'
-      ),
+      resolveWikiPath('vibecoding', 'pages/entities/claude-code.md'),
       'utf8'
     );
     expect(entityContent).toContain('## See also');
@@ -200,16 +186,7 @@ describe('wiki link review', () => {
     expect(cancelled.entries[0]?.title).toBe('Pending Wiki Link Review Cancelled');
 
     const entityContent = await readFile(
-      path.join(
-        tempDir,
-        '.config',
-        'taw',
-        'wiki',
-        'vibecoding',
-        'pages',
-        'entities',
-        'claude-code.md'
-      ),
+      resolveWikiPath('vibecoding', 'pages/entities/claude-code.md'),
       'utf8'
     );
     expect(entityContent).not.toContain('## See also');

@@ -151,7 +151,7 @@ export const confirmCommand: CommandDefinition = {
       'Before creating a new page, check the wiki index. If a page with the same path/name already exists, do not create a duplicate page.',
       'When updating an existing page with write_wiki_page, set overwrite to true. For new pages, leave overwrite false.',
       'Use write_wiki_page to create or update pages — one per entity, concept, or source.',
-      'Update pages/overview.md, index.md, and append to log.md.',
+      'Update pages/overview.md, index.md, and append to today\'s daily log under logs/YYYY-MM-DD.md.',
       'Cross-link using [[slug|Display Text]] notation when the filename slug differs from the human-readable title. A good ingest touches 5-10 pages.',
       'When done, summarize what was written. Start with totals for notes created and notes updated, then list each page path and whether it was created or updated.'
     ].join('\n\n');

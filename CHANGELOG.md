@@ -4,6 +4,18 @@ All notable changes to this project should be documented in this file.
 
 The format is based on Keep a Changelog and the project uses Semantic Versioning for release tags.
 
+## [0.1.0-beta.11] - 2026-04-21
+
+### Changed
+
+- Wiki topics now live under `~/.config/taw/wiki/topics/<topic>` and research archives under `~/.config/taw/wiki/research/`, with startup migration support for older top-level topic folders.
+- Wiki command flows now consistently resolve topic paths through the shared wiki manager, and research/archive-oriented commands use the shared filesystem helpers instead of hardcoded wiki roots.
+
+### Documentation
+
+- Updated README and versioning docs for the new wiki storage layout.
+- Archived stale pre-migration wiki planning notes and trimmed outdated roadmap/issue references to match the current implementation.
+
 ## [0.1.0-beta.10] - 2026-04-12
 
 ### Added

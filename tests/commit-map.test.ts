@@ -5,6 +5,7 @@ import os from 'node:os';
 import { createSession } from '../src/core/sessions/session-manager.js';
 import { commitMapCommand } from '../src/commands/commit-map.js';
 import { globalConfigSchema } from '../src/services/config/schema.js';
+import { resolveWikiPath } from '../src/services/wiki/manager.js';
 import type { CommandContext } from '../src/commands/types.js';
 
 const FIXTURE_MAP_WITH_RESOLVED = `---
@@ -82,7 +83,7 @@ describe('commitMapCommand integration', () => {
     expect(result.entries[0]?.kind).toBe('notice');
     expect(result.entries[0]?.title).toBe('Map Committed to Vault');
 
-    const indexPath = path.join(tempDir, '.config', 'taw', 'wiki', 'E2E Test Topic', 'index.md');
+    const indexPath = resolveWikiPath('E2E Test Topic', 'index.md');
     const content = await readFile(indexPath, 'utf8');
     expect(content.length).toBeGreaterThan(0);
   });
@@ -92,7 +93,7 @@ describe('commitMapCommand integration', () => {
       { name: 'commit-map', args: [], raw: '/commit-map' },
       context
     );
-    const indexPath = path.join(tempDir, '.config', 'taw', 'wiki', 'E2E Test Topic', 'index.md');
+    const indexPath = resolveWikiPath('E2E Test Topic', 'index.md');
     const content = await readFile(indexPath, 'utf8');
     expect(content.startsWith('---')).toBe(true);
     expect(content).toContain('topic: "E2E Test Topic"');
@@ -104,7 +105,7 @@ describe('commitMapCommand integration', () => {
       { name: 'commit-map', args: [], raw: '/commit-map' },
       context
     );
-    const indexPath = path.join(tempDir, '.config', 'taw', 'wiki', 'E2E Test Topic', 'index.md');
+    const indexPath = resolveWikiPath('E2E Test Topic', 'index.md');
     const content = await readFile(indexPath, 'utf8');
     expect(content).toContain('[[fake-decision]]');
     // The open RESEARCH item has no wiki_artifact, so no wikilink for it

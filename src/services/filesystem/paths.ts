@@ -49,6 +49,14 @@ export function getGlobalWikiRoot(): string {
   return path.join(getAppConfigDir(), 'wiki');
 }
 
+export function getGlobalWikiTopicsRoot(): string {
+  return path.join(getGlobalWikiRoot(), 'topics');
+}
+
+export function getGlobalWikiResearchRoot(): string {
+  return path.join(getGlobalWikiRoot(), 'research');
+}
+
 export function getWikiTopicDir(topic: string): string {
-  return path.join(getGlobalWikiRoot(), topic);
+  return path.join(getGlobalWikiTopicsRoot(), topic);
 }

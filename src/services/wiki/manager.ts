@@ -1,6 +1,20 @@
-import { mkdir, readFile, writeFile, access, readdir, stat } from 'node:fs/promises';
+import {
+  mkdir,
+  readFile,
+  writeFile,
+  access,
+  readdir,
+  rename,
+  stat
+} from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import path from 'node:path';
-import { getGlobalWikiRoot, getWikiTopicDir } from '../filesystem/paths.js';
+import {
+  getGlobalWikiResearchRoot,
+  getGlobalWikiRoot,
+  getGlobalWikiTopicsRoot,
+  getWikiTopicDir
+} from '../filesystem/paths.js';
 
 export interface WikiInfo {
   topic: string;
@@ -12,7 +26,7 @@ export interface WikiInfo {
 }
 
 export function getWikiInfo(topic: string): WikiInfo {
-  const topicDir = getWikiTopicDir(topic);
+  const topicDir = resolveWikiTopicDir(topic);
   return {
     topic,
     topicDir,
@@ -25,7 +39,7 @@ export function getWikiInfo(topic: string): WikiInfo {
 
 export async function wikiExists(topic: string): Promise<boolean> {
   try {
-    await access(getWikiTopicDir(topic));
+    await access(resolveWikiTopicDir(topic));
     return true;
   } catch {
     return false;
@@ -34,12 +48,28 @@ export async function wikiExists(topic: string): Promise<boolean> {
 
 export async function listWikiTopics(): Promise<string[]> {
   try {
-    const root = getGlobalWikiRoot();
-    const entries = await readdir(root, { withFileTypes: true });
-    return entries
-      .filter((entry) => entry.isDirectory() && !entry.name.startsWith('.') && !entry.name.startsWith('-'))
-      .map((entry) => entry.name)
-      .sort();
+    const topicNames = new Set<string>();
+
+    for (const root of [getGlobalWikiTopicsRoot(), getGlobalWikiRoot()]) {
+      const entries = await readdir(root, { withFileTypes: true }).catch(() => []);
+      for (const entry of entries) {
+        if (!entry.isDirectory()) {
+          continue;
+        }
+
+        if (entry.name.startsWith('.') || entry.name.startsWith('-')) {
+          continue;
+        }
+
+        if (root === getGlobalWikiRoot() && isReservedWikiRootEntry(entry.name)) {
+          continue;
+        }
+
+        topicNames.add(entry.name);
+      }
+    }
+
+    return [...topicNames].sort();
   } catch {
     return [];
   }
@@ -47,6 +77,7 @@ export async function listWikiTopics(): Promise<string[]> {
 
 export async function initWiki(topic: string): Promise<WikiInfo> {
   const info = getWikiInfo(topic);
+  await ensureWikiRoots();
   await mkdir(path.join(info.pagesDir, 'concepts'), { recursive: true });
   await mkdir(path.join(info.pagesDir, 'entities'), { recursive: true });
   await mkdir(path.join(info.pagesDir, 'sources'), { recursive: true });
@@ -54,6 +85,39 @@ export async function initWiki(topic: string): Promise<WikiInfo> {
   await mkdir(info.logsDir, { recursive: true });
   await writeIfAbsent(info.indexPath, buildIndexStub(topic));
   return info;
+}
+
+export async function migrateLegacyWikiLayout(): Promise<string[]> {
+  await ensureWikiRoots();
+
+  const root = getGlobalWikiRoot();
+  const entries = await readdir(root, { withFileTypes: true }).catch(() => []);
+  const migrated: string[] = [];
+
+  for (const entry of entries) {
+    if (!entry.isDirectory()) {
+      continue;
+    }
+
+    if (entry.name.startsWith('.') || entry.name.startsWith('-')) {
+      continue;
+    }
+
+    if (isReservedWikiRootEntry(entry.name)) {
+      continue;
+    }
+
+    const legacyDir = path.join(root, entry.name);
+    const nextDir = path.join(getGlobalWikiTopicsRoot(), entry.name);
+    if (existsSync(nextDir)) {
+      continue;
+    }
+
+    await rename(legacyDir, nextDir);
+    migrated.push(entry.name);
+  }
+
+  return migrated.sort();
 }
 
 export async function writeWikiPage(
@@ -226,4 +290,20 @@ function buildIndexStub(topic: string): string {
     '## Analyses',
     ''
   ].join('\n');
+}
+
+function resolveWikiTopicDir(topic: string): string {
+  const legacyDir = path.join(getGlobalWikiRoot(), topic);
+  const topicsDir = getWikiTopicDir(topic);
+  return existsSync(legacyDir) ? legacyDir : topicsDir;
+}
+
+async function ensureWikiRoots(): Promise<void> {
+  await mkdir(getGlobalWikiRoot(), { recursive: true });
+  await mkdir(getGlobalWikiTopicsRoot(), { recursive: true });
+  await mkdir(getGlobalWikiResearchRoot(), { recursive: true });
+}
+
+function isReservedWikiRootEntry(name: string): boolean {
+  return name === 'topics' || name === 'research';
 }

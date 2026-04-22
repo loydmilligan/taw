@@ -22,11 +22,11 @@ import { getProviderAdapter } from '../core/providers/index.js';
 import { createId } from '../utils/ids.js';
 import type { CommandDefinition, CommandResult } from './types.js';
 import type { ProviderConfig } from '../types/provider.js';
+import { getGlobalWikiResearchRoot } from '../services/filesystem/paths.js';
 
 const execFileAsync = promisify(execFile);
 
 const SEARXNG_URL = 'http://127.0.0.1:8080';
-const VAULT_DIR = path.join(os.homedir(), '.config', 'taw', 'wiki');
 export const TMP_BASE = path.join(os.tmpdir(), 'taw-research');
 export const STATE_FILE = path.join(TMP_BASE, 'active-session.json');
 const PAUSED_DIR = path.join(TMP_BASE, 'paused');
@@ -441,7 +441,7 @@ async function resumeSession(sessionId: string): Promise<{ session: ResearchSess
 
 async function finalizeSession(session: ResearchSession, config: ProviderConfig): Promise<string> {
   const safeName = session.topic.slice(0, 50).replace(/[^a-z0-9]/gi, '-').replace(/-+/g, '-');
-  const destDir = path.join(VAULT_DIR, 'Research', safeName);
+  const destDir = path.join(getGlobalWikiResearchRoot(), safeName);
   await mkdir(destDir, { recursive: true });
 
   const allFiles = session.passes.flatMap((p) => p.savedFiles);
@@ -494,9 +494,9 @@ async function finalizeSession(session: ResearchSession, config: ProviderConfig)
     ``,
     `**Topic:** ${session.topic}`,
     `**Passes:** ${session.passes.length}  ·  **Notes:** ${copied}`,
-    `**Vault:** \`${destDir}\``,
+    `**Research Archive:** \`${destDir}\``,
     ``,
-    `> This session is closed and cannot be resumed. Notes are in the vault.`,
+    `> This session is closed and cannot be resumed. Notes are in the research archive.`,
     ``,
     `---`,
     report

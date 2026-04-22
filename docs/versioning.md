@@ -1,6 +1,6 @@
 # Versioning
 
-Applies to baseline `0.1.0-beta.10`.
+Applies to baseline `0.1.0-beta.11`.
 
 ## Scope
 
@@ -53,4 +53,4 @@ For every user-visible change:
 
 ## Current baseline
 
-- Current documented baseline: `0.1.0-beta.10`
+- Current documented baseline: `0.1.0-beta.11`

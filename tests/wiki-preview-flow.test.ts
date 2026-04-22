@@ -7,7 +7,11 @@ import { wikiCommand } from '../src/commands/wiki.js';
 import { confirmCommand } from '../src/commands/confirm.js';
 import { cancelCommand } from '../src/commands/cancel.js';
 import { globalConfigSchema } from '../src/services/config/schema.js';
-import { initWiki, writeWikiPage } from '../src/services/wiki/manager.js';
+import {
+  initWiki,
+  resolveWikiPath,
+  writeWikiPage
+} from '../src/services/wiki/manager.js';
 import { searchHister } from '../src/services/hister/client.js';
 
 vi.mock('../src/services/hister/client.js', () => ({
@@ -202,16 +206,7 @@ describe('wiki preview flow', () => {
     ).resolves.toBeTruthy();
 
     const updated = await readFile(
-      path.join(
-        tempDir,
-        '.config',
-        'taw',
-        'wiki',
-        'vibecoding',
-        'pages',
-        'entities',
-        'claude-code.md'
-      ),
+      resolveWikiPath('vibecoding', 'pages/entities/claude-code.md'),
       'utf8'
     );
     expect(updated).toContain('Updated Claude Code');

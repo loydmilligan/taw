@@ -22,8 +22,9 @@ import os from 'node:os';
 import { createId } from '../utils/ids.js';
 import type { CommandDefinition } from './types.js';
 import type { TranscriptEntry } from '../types/app.js';
+import { getGlobalWikiRoot } from '../services/filesystem/paths.js';
 
-const VAULT_DIR = path.join(os.homedir(), '.config', 'taw', 'wiki');
+const VAULT_DIR = getGlobalWikiRoot();
 const CHECKPOINTS_DIR = path.join(VAULT_DIR, 'Checkpoints');
 const TMP_BASE = path.join(os.tmpdir(), 'taw-research');
 const LP_STATE_FILE = path.join(TMP_BASE, 'active-session.json');

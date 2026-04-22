@@ -1,12 +1,11 @@
 # Wiki Roadmap
 
-Applies to baseline `0.1.0-beta.9`.
+Applies to baseline `0.1.0-beta.11`.
 
 ## High Priority
 
-- Add YAML frontmatter to all newly created wiki notes.
-- Backfill frontmatter for existing wiki notes before the backlog grows further.
-- Improve ingest update behavior so existing notes are reviewed and adjusted instead of only skipping duplicate creates.
+- Improve ingest update behavior so existing notes can be reviewed and adjusted instead of only rejecting duplicate creates.
+- Consolidate wiki and research maintenance commands around the shared storage helpers so future layout changes stay centralized.
 
 ## Planned
 

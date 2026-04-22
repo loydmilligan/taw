@@ -1,10 +1,10 @@
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
-import os from 'node:os';
 import { createId } from '../utils/ids.js';
 import type { CommandDefinition } from './types.js';
+import { getGlobalWikiResearchRoot } from '../services/filesystem/paths.js';
 
-const WIKI_DIR = path.join(os.homedir(), '.config', 'taw', 'wiki');
+const WIKI_DIR = getGlobalWikiResearchRoot();
 
 interface Flashcard {
   question: string;
