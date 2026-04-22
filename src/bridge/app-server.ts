@@ -51,6 +51,8 @@ import { readPendingIndexReview } from '../services/wiki/pending-index-review.js
 import { readPendingLinkReview } from '../services/wiki/pending-link-review.js';
 import type { SearchBackendStatus } from '../services/search/searxng-manager.js';
 import { createId } from '../utils/ids.js';
+import { captureFeedback, loadFeedback } from '../core/feedback/store.js';
+import { getGlobalWikiResearchRoot } from '../services/filesystem/paths.js';
 
 export interface AppServerOptions {
   token: string;
@@ -78,6 +80,12 @@ interface BackgroundJob {
   status: 'running' | 'success' | 'failed';
   completedAt?: string;
   exitCode?: number | null;
+}
+
+interface Flashcard {
+  question: string;
+  answer: string;
+  sourceFile: string;
 }
 
 interface AppActionItem {
@@ -138,6 +146,16 @@ const appTopicAnalysisRequestSchema = z.object({
   topic: z.string().min(1),
   notePath: z.string().min(1),
   question: z.string().min(1)
+});
+
+const appCaptureIdeaRequestSchema = z.object({
+  summary: z.string().min(1).max(2000),
+  note: z.string().max(2000).nullable().default(null)
+});
+
+const appCaptureIssueRequestSchema = z.object({
+  summary: z.string().min(1).max(2000),
+  note: z.string().max(2000).nullable().default(null)
 });
 
 interface NewWikiIngestFromApp {
@@ -523,6 +541,63 @@ export function createAppServerHandler(
       return;
     }
 
+    if (request.method === 'GET' && parsedUrl?.pathname === '/app/api/flashcards') {
+      if (!authorizeApp(request)) {
+        writeJson(response, 401, { ok: false, error: 'App session required.' });
+        return;
+      }
+      const wikiRoot = getGlobalWikiResearchRoot();
+      const cards = await collectAllFlashcards(wikiRoot);
+      writeJson(response, 200, { ok: true, cards });
+      return;
+    }
+
+    if (request.method === 'GET' && parsedUrl?.pathname === '/app/api/ideas') {
+      if (!authorizeApp(request)) {
+        writeJson(response, 401, { ok: false, error: 'App session required.' });
+        return;
+      }
+      const appState = await ensureAppState(request, options.defaultCwd);
+      const entries = await loadFeedback('idea', appState.session);
+      writeJson(response, 200, { ok: true, entries });
+      return;
+    }
+
+    if (request.method === 'GET' && parsedUrl?.pathname === '/app/api/issues') {
+      if (!authorizeApp(request)) {
+        writeJson(response, 401, { ok: false, error: 'App session required.' });
+        return;
+      }
+      const appState = await ensureAppState(request, options.defaultCwd);
+      const entries = await loadFeedback('issue', appState.session);
+      writeJson(response, 200, { ok: true, entries });
+      return;
+    }
+
+    if (request.method === 'POST' && parsedUrl?.pathname === '/app/api/capture-idea') {
+      if (!authorizeApp(request)) {
+        writeJson(response, 401, { ok: false, error: 'App session required.' });
+        return;
+      }
+      const appState = await ensureAppState(request, options.defaultCwd);
+      const body = appCaptureIdeaRequestSchema.parse(await readJson(request));
+      const entry = await captureFeedback('idea', appState.session, appState.transcript, appState.mode, body.summary, body.note);
+      writeJson(response, 200, { ok: true, id: entry.id, summary: entry.summary });
+      return;
+    }
+
+    if (request.method === 'POST' && parsedUrl?.pathname === '/app/api/capture-issue') {
+      if (!authorizeApp(request)) {
+        writeJson(response, 401, { ok: false, error: 'App session required.' });
+        return;
+      }
+      const appState = await ensureAppState(request, options.defaultCwd);
+      const body = appCaptureIssueRequestSchema.parse(await readJson(request));
+      const entry = await captureFeedback('issue', appState.session, appState.transcript, appState.mode, body.summary, body.note);
+      writeJson(response, 200, { ok: true, id: entry.id, summary: entry.summary });
+      return;
+    }
+
     writeJson(response, 404, { error: 'Not found' });
   };
 }
@@ -531,6 +606,44 @@ export function createAppServerHandler(
 
 function normalizeTopic(raw: string): string {
   return raw.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+}
+
+function parseFlashcardsFromContent(content: string, sourceFile: string): Flashcard[] {
+  const cards: Flashcard[] = [];
+  const lines = content.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (line.startsWith('Q:')) {
+      const question = line.slice(2).trim();
+      for (let j = i + 1; j < Math.min(i + 4, lines.length); j++) {
+        const next = lines[j].trim();
+        if (next.startsWith('A:')) {
+          const answer = next.slice(2).trim();
+          if (question && answer) {
+            cards.push({ question, answer, sourceFile });
+          }
+          i = j;
+          break;
+        }
+      }
+    }
+  }
+  return cards;
+}
+
+async function collectAllFlashcards(wikiRoot: string): Promise<Flashcard[]> {
+  const files = await collectMarkdownFiles(wikiRoot).catch(() => []);
+  const all: Flashcard[] = [];
+  for (const relativePath of files) {
+    const fullPath = `${wikiRoot}/${relativePath}`;
+    try {
+      const content = await readFile(fullPath, 'utf8');
+      all.push(...parseFlashcardsFromContent(content, relativePath));
+    } catch {
+      // skip unreadable files
+    }
+  }
+  return all;
 }
 
 function buildResearchWindowName(title: string): string {
@@ -870,10 +983,12 @@ async function buildRecentStatus(
   sessionDir: string;
   queuedInputs: number;
   researchSources: number;
+  topicCount: number;
   backgroundJobs: BackgroundJob[];
 }> {
   cleanupOldJobs();
   const researchSources = await readResearchSources(appState.session);
+  const topicCount = (await listWikiTopics()).length;
   const backgroundJobs = [...activeJobs.values()].sort((left, right) =>
     right.startedAt.localeCompare(left.startedAt)
   );
@@ -883,6 +998,7 @@ async function buildRecentStatus(
     sessionDir: appState.session.sessionDir,
     queuedInputs: appState.queuedInputs.length,
     researchSources: researchSources.length,
+    topicCount,
     backgroundJobs
   };
 }
