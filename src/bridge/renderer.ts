@@ -893,6 +893,12 @@ export function renderPwaAppPage(): string {
           <button id="topicAnalysisBtn" type="button" class="btn btn-primary">Run Analysis</button>
         </div>
         <div id="topicsOutput" class="md-output"></div>
+        <div class="card" id="flashcard-section">
+          <h3>Flashcards</h3>
+          <div class="meta" style="margin-bottom:12px">Study Q&amp;A pairs extracted from your wiki notes.</div>
+          <button class="btn" id="loadFlashcardsBtn" onclick="loadFlashcards()">Load Flashcards</button>
+          <div id="flashcard-list" style="margin-top:12px"></div>
+        </div>
       </section>
 
     </div>
@@ -1134,10 +1140,34 @@ export function renderPwaAppPage(): string {
         '<div class="surface"><strong>Mode</strong><div class="meta">' + status.mode + '</div></div>',
         '<div class="surface"><strong>Queued Inputs</strong><div class="meta">' + status.queuedInputs + '</div></div>',
         '<div class="surface"><strong>Research Sources</strong><div class="meta">' + status.researchSources + '</div></div>',
+        '<div class="surface"><strong>Wiki Topics</strong><div class="meta">' + (status.topicCount ?? 0) + '</div></div>',
         '<div class="surface"><strong>Session Folder</strong><div class="meta">' + status.sessionDir + '</div></div>',
         '</div></div>',
         '<div class="card"><h3>Background Jobs</h3>' + (jobLines.length ? jobLines.join('') : '<div class="meta">No recent background jobs.</div>') + '</div>'
       ].join('');
+    }
+
+    async function loadFlashcards() {
+      const listEl = document.getElementById('flashcard-list');
+      listEl.innerHTML = '<div class="meta">Loading…</div>';
+      try {
+        const response = await fetch('/app/api/flashcards');
+        const body = await response.json();
+        if (!response.ok || !body.ok) {
+          listEl.innerHTML = '<div class="meta" style="color:var(--error)">Could not load flashcards.</div>';
+          return;
+        }
+        const cards = body.cards || [];
+        if (cards.length === 0) {
+          listEl.innerHTML = '<div class="meta">No flashcards found. Add Q: / A: pairs to wiki notes to create flashcards.</div>';
+          return;
+        }
+        listEl.innerHTML = cards.map((card) =>
+          '<div class="surface" style="margin-top:8px"><strong>Q: ' + card.question + '</strong><div class="meta" style="margin-top:4px">A: ' + card.answer + '</div><div class="meta" style="font-size:11px;margin-top:4px">Source: ' + card.sourceFile + '</div></div>'
+        ).join('');
+      } catch (err) {
+        listEl.innerHTML = '<div class="meta" style="color:var(--error)">Error: ' + String(err) + '</div>';
+      }
     }
 
     async function loadTopicNotes(topic) {
@@ -1477,7 +1507,7 @@ export function renderPwaAppPage(): string {
         if (!response.ok || !body.ok) {
           setMessage(topicsOutputEl, body.error || 'Research seeds failed.', 'error');
         } else {
-          setMarkdown(topicsOutputEl, body.answer);
+          topicsOutputEl.innerHTML = renderMarkdown(body.answer).replace(/https?:\/\/[^\s<>"{}|\\^\x60\[\]]+/g, (url) => '<a href="' + url + '" target="_blank" rel="noopener noreferrer" style="color:var(--accent)">' + url + '</a>');
         }
       } finally {
         btn.disabled = false;
