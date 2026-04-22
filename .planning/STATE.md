@@ -4,14 +4,14 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: "Paused at 999.4-04 Task 3 checkpoint:human-verify"
-last_updated: "2026-04-20T06:03:52.425Z"
-last_activity: 2026-04-20
+last_updated: "2026-04-22T07:29:32.540Z"
+last_activity: 2026-04-22 -- Phase --phase execution started
 progress:
-  total_phases: 9
+  total_phases: 10
   completed_phases: 3
-  total_plans: 21
+  total_plans: 24
   completed_plans: 19
-  percent: 90
+  percent: 79
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-14)
 
 **Core value:** Every session leaves a permanent, queryable artifact in the knowledge base — the map-to-vault pipeline must always work end-to-end.
-**Current focus:** Phase 999.4 — bridge-refactor-lean-extension-bridge-plus-pwa-capture-app
+**Current focus:** Phase --phase — 999.5
 
 ## Current Position
 
-Phase: 999.4 (bridge-refactor-lean-extension-bridge-plus-pwa-capture-app) — EXECUTING
-Plan: 4 of 4
-Status: Ready to execute
-Last activity: 2026-04-20
+Phase: --phase (999.5) — EXECUTING
+Plan: 1 of --name
+Status: Executing Phase --phase
+Last activity: 2026-04-22 -- Phase --phase execution started
 
 Phase 999.3 (voice-interface-stt-tts-openrouter-integration) — PAUSED at plan 5 of 7 (user decision 2026-04-19). Resume when bridge refactor is complete.
 
