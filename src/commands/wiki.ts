@@ -84,7 +84,7 @@ export const wikiCommand: CommandDefinition = {
     }
 
     if (sub === 'query') {
-      return runQuery(input.args[1], input.args.slice(2).join(' '), context);
+      return runQuery(input.args[1], input.args.slice(2).join(' '));
     }
 
     if (sub === 'links') {
@@ -594,8 +594,7 @@ async function runIngestHister(
 
 async function runQuery(
   topic: string | undefined,
-  question: string,
-  context: Parameters<typeof wikiCommand.run>[1]
+  question: string
 ) {
   if (!topic) {
     return {

@@ -1,10 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import { voiceCommand } from './voice.js';
+import type { CommandContext, ParsedCommand } from './types.js';
 
-function ctx(voiceMode = false): any {
-  return { appState: { voiceMode, voiceState: 'idle' } };
+function ctx(voiceMode = false): CommandContext & {
+  appState: { voiceMode: boolean; voiceState: 'idle' };
+} {
+  return {
+    cwd: '/tmp',
+    session: {} as CommandContext['session'],
+    transcript: [],
+    providerConfig: { provider: 'openrouter', model: 'openrouter/auto' },
+    mode: 'General',
+    globalConfig: {} as CommandContext['globalConfig'],
+    projectConfig: null,
+    appState: { voiceMode, voiceState: 'idle' }
+  };
 }
-function parsed(args: string[] = []): any {
+function parsed(args: string[] = []): ParsedCommand {
   return { name: 'voice', args, raw: `/voice ${args.join(' ')}`.trim() };
 }
 
@@ -40,6 +52,6 @@ describe('voiceCommand', () => {
     expect(r.entries[0].title).toBeTruthy();
     expect(typeof r.entries[0].body).toBe('string');
     // TranscriptEntry has no createdAt — runtime entry must not carry one
-    expect((r.entries[0] as any).createdAt).toBeUndefined();
+    expect('createdAt' in r.entries[0]).toBe(false);
   });
 });

@@ -15,12 +15,17 @@ export function createBridgeServer(options: BridgeServerOptions): http.Server {
     try {
       await wikiLayoutReady;
       const url = request.url ?? '/';
-      if (url === '/app' || url.startsWith('/app/') || url === '/mobile') {
+      if (
+        url === '/app' ||
+        url.startsWith('/app/') ||
+        url === '/mobile' ||
+        url.startsWith('/mobile?')
+      ) {
         await appServer(request, response);
       } else {
         await bridgeCore(request, response);
       }
-    } catch (err) {
+    } catch {
       response.statusCode = 500;
       response.setHeader('content-type', 'application/json');
       response.end(JSON.stringify({ error: 'Internal bridge error.' }));

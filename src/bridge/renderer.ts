@@ -1597,3 +1597,12 @@ export function renderAppIconSvg(): string {
   <path d="M32 94c16-12 30-18 44-18" fill="none" stroke="#8d3f26" stroke-width="8" stroke-linecap="round"/>
 </svg>`;
 }
+
+export function renderAppIconPng(): Uint8Array {
+  return Uint8Array.from(
+    Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a5S8AAAAASUVORK5CYII=',
+      'base64'
+    )
+  );
+}

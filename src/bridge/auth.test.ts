@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import http from 'node:http';
+import type http from 'node:http';
 import {
   authorize,
   authorizeApp,
@@ -13,14 +13,6 @@ import {
 
 function makeRequest(headers: Record<string, string>): http.IncomingMessage {
   return { headers } as unknown as http.IncomingMessage;
-}
-
-function makeResponse(): http.ServerResponse {
-  const headers: Record<string, string> = {};
-  return {
-    setHeader: (name: string, value: string) => { headers[name] = value; },
-    _headers: headers
-  } as unknown as http.ServerResponse;
 }
 
 describe('authorize', () => {

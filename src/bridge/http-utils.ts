@@ -1,4 +1,4 @@
-import http from 'node:http';
+import type http from 'node:http';
 
 const MAX_BODY_BYTES = 1_048_576; // 1 MB
 

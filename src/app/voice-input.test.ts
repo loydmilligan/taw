@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
+import type { ChildProcess } from 'node:child_process';
 import { handleKeyWithInterrupt } from './voice-input.js';
 
-function makeProc(killed = false): any {
-  return { killed, kill: vi.fn() };
+function makeProc(killed = false): ChildProcess {
+  return { killed, kill: vi.fn() } as unknown as ChildProcess;
 }
 
 const pressKey = (char: string) => ({ value: char, key: {} });
@@ -21,7 +22,7 @@ describe('handleKeyWithInterrupt (D-10 fallthrough contract)', () => {
   });
 
   it('calls defaultHandler only (no interrupt) when no speak proc is active', () => {
-    const ref: { current: any } = { current: null };
+    const ref: { current: ChildProcess | null } = { current: null };
     const interruptSpeak = vi.fn();
     const defaultHandler = vi.fn();
     handleKeyWithInterrupt(pressKey('a'), ref, interruptSpeak, defaultHandler);

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { EventEmitter } from 'node:events';
-import http from 'node:http';
+import type http from 'node:http';
 import { parseRequestUrl, readJson, writeJson } from './http-utils.js';
 
 function makeRequest(url: string | undefined, headers: Record<string, string> = {}): http.IncomingMessage {

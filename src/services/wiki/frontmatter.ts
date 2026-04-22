@@ -86,7 +86,6 @@ export function ensureOperationalFrontmatter(
     return `${frontmatterLines.join('\n')}${content.replace(/^\n+/, '')}`;
   }
 
-  const prefix = frontmatterMatch[0];
   let next = content;
 
   next = upsertFrontmatterLine(next, 'updated', options.today);

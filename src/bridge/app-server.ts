@@ -1,10 +1,9 @@
-import http from 'node:http';
+import type http from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { z } from 'zod';
 import { resolvePhaseAfterCommand } from '../app/state.js';
-import { bootstrapApp } from '../cli/bootstrap.js';
 import {
   authorizeApp,
   createAppSession,
@@ -16,6 +15,7 @@ import {
   renderMobilePage,
   renderPwaAppPage,
   renderAppServiceWorker,
+  renderAppIconPng,
   renderAppIconSvg
 } from './renderer.js';
 import {
@@ -140,16 +140,16 @@ const appTopicAnalysisRequestSchema = z.object({
   question: z.string().min(1)
 });
 
-const newWikiIngestFromAppSchema = z.object({
-  cwd: z.string().optional(),
-  topic: z.string().min(1),
-  pageTitle: z.string().min(1),
-  pageUrl: z.string().nullable(),
-  pageTextExcerpt: z.string().nullable(),
-  selectedText: z.string().nullable().default(null),
-  userNote: z.string().nullable().default(null),
-  autoRun: z.boolean().default(false)
-});
+interface NewWikiIngestFromApp {
+  cwd?: string;
+  topic: string;
+  pageTitle: string;
+  pageUrl: string | null;
+  pageTextExcerpt: string | null;
+  selectedText: string | null;
+  userNote: string | null;
+  autoRun: boolean;
+}
 
 export function createAppServerHandler(
   options: AppServerOptions
@@ -276,10 +276,9 @@ export function createAppServerHandler(
       (parsedUrl?.pathname === '/app/icon-192.png' ||
         parsedUrl?.pathname === '/app/icon-512.png')
     ) {
-      // PNG encoder removed in plan 999.4-02; redirect to SVG icon
-      response.statusCode = 302;
-      response.setHeader('location', '/app/icon.svg');
-      response.end();
+      response.statusCode = 200;
+      response.setHeader('content-type', 'image/png');
+      response.end(renderAppIconPng());
       return;
     }
 
@@ -320,7 +319,7 @@ export function createAppServerHandler(
       writeJson(response, 200, {
         ok: true,
         topics: await listWikiTopics(),
-        actions: await buildAppActions(appState, activeJobs),
+        actions: await buildAppActions(appState),
         recentStatus: await buildRecentStatus(appState, activeJobs, cleanupOldJobs)
       });
       return;
@@ -334,7 +333,7 @@ export function createAppServerHandler(
       const appState = await ensureAppState(request, options.defaultCwd);
       writeJson(response, 200, {
         ok: true,
-        actions: await buildAppActions(appState, activeJobs)
+        actions: await buildAppActions(appState)
       });
       return;
     }
@@ -350,7 +349,7 @@ export function createAppServerHandler(
       writeJson(response, 200, {
         ok: true,
         ...result,
-        actions: await buildAppActions(appState, activeJobs),
+        actions: await buildAppActions(appState),
         recentStatus: await buildRecentStatus(appState, activeJobs, cleanupOldJobs)
       });
       return;
@@ -563,7 +562,7 @@ async function queueResearchIngestRequest(
   const cwd = body.cwd ?? options.defaultCwd;
   const launch =
     options.launch ??
-    (async (_input: { researchPayloadPath?: string }, _cwd: string, _windowName: string) => {
+    (async () => {
       throw new Error('launch not configured');
     });
   const launchResult = await launch(
@@ -581,7 +580,7 @@ async function queueResearchIngestRequest(
 }
 
 async function queueWikiIngestRequest(
-  body: z.infer<typeof newWikiIngestFromAppSchema>,
+  body: NewWikiIngestFromApp,
   options: AppServerOptions,
   activeJobs: Map<string, BackgroundJob>,
   cleanupOldJobs: () => void
@@ -659,9 +658,7 @@ async function queueWikiIngestRequest(
   };
 }
 
-async function writeWikiSourceFile(
-  body: z.infer<typeof newWikiIngestFromAppSchema>
-): Promise<string> {
+async function writeWikiSourceFile(body: NewWikiIngestFromApp): Promise<string> {
   const content = [
     `# ${body.pageTitle}`,
     '',
@@ -784,10 +781,7 @@ async function runAssistantQuery(
   return result.assistantText;
 }
 
-async function buildAppActions(
-  appState: AppState,
-  _activeJobs: Map<string, BackgroundJob>
-): Promise<{
+async function buildAppActions(appState: AppState): Promise<{
   categories: Array<{ id: string; title: string; items: AppActionItem[] }>;
 }> {
   const topics = await listWikiTopics();

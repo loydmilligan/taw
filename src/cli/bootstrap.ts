@@ -20,7 +20,7 @@ export async function bootstrapApp(
   cwd: string,
   options: BootstrapOptions = {}
 ): Promise<AppState> {
-  await migrateLegacyWikiLayout();
+  const migratedTopics = await migrateLegacyWikiLayout();
   const config = await loadConfig(cwd);
   const session = await createSession({
     cwd,
@@ -56,7 +56,7 @@ export async function bootstrapApp(
     transcript: createInitialTranscript(
       session.storageMode,
       session.sessionDir,
-      browserState?.entries ?? []
+      [...buildMigrationEntries(migratedTopics), ...(browserState?.entries ?? [])]
     ),
     usage: {
       session: summarizeSessionUsage(summaries),
@@ -120,6 +120,28 @@ function createInitialTranscript(
       body: sessionDir
     },
     ...extraEntries
+  ];
+}
+
+function buildMigrationEntries(migratedTopics: string[]): TranscriptEntry[] {
+  if (migratedTopics.length === 0) {
+    return [];
+  }
+
+  const preview = migratedTopics.slice(0, 5).join(', ');
+  const remainder =
+    migratedTopics.length > 5 ? `, +${migratedTopics.length - 5} more` : '';
+
+  return [
+    {
+      id: createId('wiki-layout-migrated'),
+      kind: 'notice',
+      title: 'Wiki Layout Migrated',
+      body: [
+        `Moved ${migratedTopics.length} topic folder${migratedTopics.length === 1 ? '' : 's'} into ~/.config/taw/wiki/topics/.`,
+        `Topics: ${preview}${remainder}`
+      ].join('\n')
+    }
   ];
 }
 

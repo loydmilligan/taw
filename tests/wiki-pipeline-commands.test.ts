@@ -16,7 +16,7 @@ import { wikiSaveItemCommand } from '../src/commands/wiki-save-item.js';
 import { wikiItemCommand } from '../src/commands/wiki-item.js';
 import { readMapFile } from '../src/commands/map-file.js';
 import { globalConfigSchema } from '../src/services/config/schema.js';
-import type { CommandContext } from '../src/commands/types.js';
+import type { CommandContext, ParsedCommand } from '../src/commands/types.js';
 
 const originalHome = process.env.HOME;
 
@@ -42,7 +42,7 @@ open_items:
 # Test Map Body
 `;
 
-function makeInput(name: string, args: string[]): import('../src/commands/types.js').ParsedCommand {
+function makeInput(name: string, args: string[]): ParsedCommand {
   return { name, args, raw: `/${name} ${args.join(' ')}` };
 }
 

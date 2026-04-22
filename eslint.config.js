@@ -9,6 +9,8 @@ export default [
       'dist/**',
       'node_modules/**',
       '.ai/**',
+      '.worktrees/**',
+      'docs/node-ttstt/**',
       'vitest.config.ts',
       'scripts/openrouter-taw-service.ts'
     ]
@@ -26,7 +28,11 @@ export default [
       globals: {
         console: 'readonly',
         process: 'readonly',
-        fetch: 'readonly'
+        fetch: 'readonly',
+        Buffer: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        global: 'readonly'
       }
     },
     plugins: {
@@ -45,7 +51,10 @@ export default [
       globals: {
         chrome: 'readonly',
         document: 'readonly',
-        fetch: 'readonly'
+        fetch: 'readonly',
+        window: 'readonly',
+        localStorage: 'readonly',
+        setTimeout: 'readonly'
       }
     }
   },

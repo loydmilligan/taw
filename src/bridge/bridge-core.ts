@@ -1,8 +1,8 @@
-import http from 'node:http';
+import type http from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { authorize } from './auth.js';
-import { parseRequestUrl, readJson, writeJson } from './http-utils.js';
+import { readJson, writeJson } from './http-utils.js';
 import {
   writeBridgeMarkdownFile,
   writeBridgePayloadFile,
@@ -200,8 +200,6 @@ export function createBridgeCoreHandler(
   }
 
   return async (request: http.IncomingMessage, response: http.ServerResponse): Promise<void> => {
-    const parsedUrl = parseRequestUrl(request);
-
     // Public — no auth
     if (request.method === 'GET' && request.url === '/version') {
       writeJson(response, 200, { version: APP_VERSION });
